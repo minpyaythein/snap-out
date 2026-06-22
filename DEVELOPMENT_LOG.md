@@ -162,6 +162,10 @@ Palette unchanged at heart: `#6366f1 → #8b5cf6` indigo/violet.
 
 Added `MAX_SITES = 6` in `popup.js`. The add handler rejects a new site once 6 are tracked with **"You can track up to 6 sites. Remove one to add another."** (message derives from the constant). Checked *after* the duplicate check, so re-submitting an already-tracked site still gets the "already tracked" message rather than the cap message. Keeps the list intentional and stays well under Chrome's ~8 KB per-item `chrome.storage.sync` quota for the `trackedSites` array.
 
+## Phase 15 — Success message after solving (2026-06-22)
+
+A correct answer used to remove the overlay instantly. Now `content.js` swaps the card to a success state — an animated gradient checkmark, "Nice work!", and "Back to it — make these minutes count. 🌿" (reusing the existing pop-in/fade-in keyframes) — holds it ~2s, then removes the overlay and sends `DISMISS_POPUP` (which resets the timer and clears overlays on the other tabs). Applies to the math popup only; the `none`-mode banner still dismisses immediately.
+
 ---
 
 ## How the shape evolved

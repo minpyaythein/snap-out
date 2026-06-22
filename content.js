@@ -217,12 +217,27 @@ function showPopup(hostname, difficulty = 'hard') {
         checkBtn.disabled = input.value.trim() === '';
     }
 
+    function showSuccess() {
+        const box = overlay.querySelector('.time-nudge-box');
+        box.innerHTML = `
+            <div class="time-nudge-success">
+                <div class="time-nudge-checkmark">✓</div>
+                <p class="time-nudge-success-title">Nice work!</p>
+                <p class="time-nudge-success-sub">Back to it — make these minutes count. 🌿</p>
+            </div>
+        `;
+    }
+
     function validate() {
         if (input.value.trim() === '') return; // nothing entered
         const userAnswer = parseInt(input.value.trim(), 10);
         if (userAnswer === problem.answer) {
-            overlay.remove();
-            chrome.runtime.sendMessage({ type: 'DISMISS_POPUP', hostname });
+            // Brief celebration, then reset the timer + clear overlays everywhere.
+            showSuccess();
+            setTimeout(() => {
+                overlay.remove();
+                chrome.runtime.sendMessage({ type: 'DISMISS_POPUP', hostname });
+            }, 2000);
         } else {
             errorEl.textContent = 'Wrong! Try again.';
             input.value = '';

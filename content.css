@@ -186,3 +186,41 @@
     box-shadow: none;
     cursor: not-allowed;
 }
+
+/* Success state shown briefly after a correct answer. */
+.time-nudge-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    animation: time-nudge-fade-in 0.2s ease both;
+}
+
+.time-nudge-checkmark {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    font-size: 34px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 22px rgba(99, 102, 241, 0.45);
+    animation: time-nudge-pop-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.time-nudge-success-title {
+    margin: 6px 0 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.time-nudge-success-sub {
+    margin: 0;
+    font-size: 14px;
+    color: #6b7280;
+}
