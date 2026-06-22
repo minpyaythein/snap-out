@@ -158,6 +158,10 @@ Palette unchanged at heart: `#6366f1 → #8b5cf6` indigo/violet.
 
 **Fix:** new **`RESET_SITE`** message. The popup now calls `addSite`/`removeSite` then sends `RESET_SITE`; the background (under the lock) flushes the active site first, deletes only the target site's `elapsed`/`popupShown`, clears its schedule, hides its overlays, and **only** resets `lastActiveTime` when the target *is* the active site. The popup no longer writes runtime session state at all. The now-unused `HIDE_ALL_OVERLAYS` message was removed (`RESET_SITE` hides overlays itself).
 
+## Phase 14 — Cap tracked sites at 6 (2026-06-22)
+
+Added `MAX_SITES = 6` in `popup.js`. The add handler rejects a new site once 6 are tracked with **"You can track up to 6 sites. Remove one to add another."** (message derives from the constant). Checked *after* the duplicate check, so re-submitting an already-tracked site still gets the "already tracked" message rather than the cap message. Keeps the list intentional and stays well under Chrome's ~8 KB per-item `chrome.storage.sync` quota for the `trackedSites` array.
+
 ---
 
 ## How the shape evolved

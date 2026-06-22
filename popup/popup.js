@@ -100,6 +100,8 @@ function isValidHostname(host) {
     return /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/.test(host);
 }
 
+const MAX_SITES = 6; // cap on tracked sites — keeps the list intentional
+
 addForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearError();
@@ -128,6 +130,10 @@ addForm.addEventListener('submit', async (e) => {
     const { trackedSites } = await getSettings();
     if (trackedSites.includes(hostname)) {
         showError(`${hostname} is already tracked.`);
+        return;
+    }
+    if (trackedSites.length >= MAX_SITES) {
+        showError(`You can track up to ${MAX_SITES} sites. Remove one to add another.`);
         return;
     }
 
