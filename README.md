@@ -1,5 +1,12 @@
 # snap-out
 
+<div align="center">
+
+[![English](https://img.shields.io/badge/README-English-2563eb?style=for-the-badge)](README.md)
+[![日本語](https://img.shields.io/badge/README-日本語-lightgrey?style=for-the-badge)](README.ja.md)
+
+</div>
+
 A Chrome extension that interrupts mindless scrolling and watching by forcing you to solve a math problem before you can continue.
 
 You pick the sites. When you've been on one too long, a popup blocks the screen. Solve the math — then you're free.
