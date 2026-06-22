@@ -1,6 +1,4 @@
-if (typeof OVERLAY_ID === 'undefined') {
-    var OVERLAY_ID = 'time-nudge-overlay';
-}
+var OVERLAY_ID = 'time-nudge-overlay';
 
 const DIFFICULTY_CONFIG = {
     'easy':       { type: 'arithmetic',     ops: ['+', '-', '×', '÷'], range: { min: 1,   max: 10  }, operands: 2 },
@@ -163,7 +161,7 @@ function generateProblem(difficulty = 'hard') {
 }
 
 function showBanner(hostname) {
-    if (document.getElementById(OVERLAY_ID)) return;
+    document.getElementById(OVERLAY_ID)?.remove();
 
     const banner = document.createElement('div');
     banner.id = OVERLAY_ID;
@@ -182,10 +180,11 @@ function showBanner(hostname) {
 }
 
 function showPopup(hostname, difficulty = 'hard') {
-    if (document.getElementById(OVERLAY_ID)) return;
+    document.getElementById(OVERLAY_ID)?.remove();
 
     const overlay = document.createElement('div');
     overlay.id = OVERLAY_ID;
+    overlay.className = 'time-nudge-popup';
 
     let problem = generateProblem(difficulty);
 
@@ -231,12 +230,18 @@ function showPopup(hostname, difficulty = 'hard') {
     document.body.appendChild(overlay);
 }
 
-chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === 'SHOW_POPUP') {
-        if (message.difficulty === 'none') {
-            showBanner(message.hostname);
-        } else {
-            showPopup(message.hostname, message.difficulty);
+if (!window.__snapOutListener) {
+    window.__snapOutListener = true;
+    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+        if (message.type === 'SHOW_POPUP') {
+            if (message.difficulty === 'none') {
+                showBanner(message.hostname);
+            } else {
+                showPopup(message.hostname, message.difficulty);
+            }
+        } else if (message.type === 'HIDE_OVERLAY') {
+            document.getElementById(OVERLAY_ID)?.remove();
         }
-    }
-});
+        sendResponse({ ok: true });
+    });
+}

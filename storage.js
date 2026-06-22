@@ -1,7 +1,12 @@
 const DEFAULT_THRESHOLD = 300; // seconds (fallback when no defaultThreshold in storage)
 
+function normalizeHostname(hostname) {
+    return hostname.replace(/^www\./, '');
+}
+
 async function getSettings() {
     const result = await chrome.storage.sync.get({ trackedSites: [], thresholds: {}, difficultyLevel: 'hard', defaultThreshold: null });
+    result.trackedSites = [...new Set(result.trackedSites.map(normalizeHostname))];
     return result;
 }
 

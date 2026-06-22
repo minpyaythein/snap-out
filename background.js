@@ -4,6 +4,7 @@ importScripts('storage.js');
 
 const ALARM_NAME = 'site-tracker-tick';
 const THRESHOLD_ALARM_PREFIX = 'threshold-trigger-';
+const pendingTimeouts = {}; // hostname → timeout ID
 
 // ─── Session state (survives SW restarts within same browser session) ─────────
 
@@ -85,7 +86,7 @@ async function updateActiveTab() {
         return;
     }
     try {
-        const hostname = new URL(tab.url).hostname;
+        const hostname = normalizeHostname(new URL(tab.url).hostname);
         const state = await getSessionState();
 
         if (hostname !== state.activeHostname) {
@@ -198,6 +199,8 @@ async function checkThreshold(source) {
     console.log(`[TimeNudge] checkThreshold (${source}): ${hostname} — counting ${elapsed}s / threshold ${threshold}s (${Math.round((elapsed / threshold) * 100)}%)`);
 
     if (elapsed >= threshold && !flushed.popupShown[hostname]) {
+        clearTimeout(pendingTimeouts[hostname]);
+        delete pendingTimeouts[hostname];
         console.log(`[TimeNudge] checkThreshold (${source}): threshold reached for ${hostname}, showing popup`);
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (tab) {
@@ -209,9 +212,15 @@ async function checkThreshold(source) {
         }
     } else if (elapsed < threshold) {
         const remaining = threshold - elapsed;
-        const alarmName = THRESHOLD_ALARM_PREFIX + hostname;
-        console.log(`[TimeNudge] checkThreshold (${source}): scheduling one-shot alarm in ${remaining}s`);
-        chrome.alarms.create(alarmName, { delayInMinutes: remaining / 60 });
+        if (remaining < 30) {
+            clearTimeout(pendingTimeouts[hostname]);
+            console.log(`[TimeNudge] checkThreshold (${source}): scheduling setTimeout in ${remaining}s (short threshold)`);
+            pendingTimeouts[hostname] = setTimeout(() => checkThreshold('timeout'), remaining * 1000);
+        } else {
+            const alarmName = THRESHOLD_ALARM_PREFIX + hostname;
+            console.log(`[TimeNudge] checkThreshold (${source}): scheduling one-shot alarm in ${remaining}s`);
+            chrome.alarms.create(alarmName, { delayInMinutes: remaining / 60 });
+        }
     }
 }
 
@@ -228,14 +237,27 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 // ─── Handle DISMISS_POPUP from content script ────────────────────────────────
 
 chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === 'RESET_TIMER') {
+        console.log('[TimeNudge] RESET_TIMER received, re-scheduling threshold check');
+        const hostname = message.hostname;
+        if (hostname) {
+            clearTimeout(pendingTimeouts[hostname]);
+            delete pendingTimeouts[hostname];
+        }
+        checkThreshold('reset-timer');
+        return;
+    }
     if (message.type === 'DISMISS_POPUP') {
         console.log(`[TimeNudge] DISMISS_POPUP received for ${message.hostname}, resetting timer`);
-        getSessionState().then(state => {
+        clearTimeout(pendingTimeouts[message.hostname]);
+        delete pendingTimeouts[message.hostname];
+        getSessionState().then(async (state) => {
             const elapsed = { ...state.elapsed };
             const popupShown = { ...state.popupShown };
             delete elapsed[message.hostname];
             delete popupShown[message.hostname];
-            setSessionState({ elapsed, popupShown, lastActiveTime: Date.now() });
+            await setSessionState({ elapsed, popupShown, lastActiveTime: Date.now() });
+            await checkThreshold('dismiss-reset');
         });
     }
 });

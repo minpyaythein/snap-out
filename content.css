@@ -36,7 +36,7 @@
     background: rgba(255, 255, 255, 0.35);
 }
 
-#time-nudge-overlay {
+#time-nudge-overlay.time-nudge-popup {
     position: fixed;
     inset: 0;
     z-index: 2147483647;

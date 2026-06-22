@@ -5,12 +5,16 @@ const sessionElapsed = document.getElementById('session-elapsed');
 
 async function updateSessionTimer() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url) return;
+    if (!tab || !tab.url) {
+        sessionTimer.classList.add('hidden');
+        return;
+    }
 
     let hostname;
     try {
-        hostname = new URL(tab.url).hostname;
+        hostname = normalizeHostname(new URL(tab.url).hostname);
     } catch {
+        sessionTimer.classList.add('hidden');
         return;
     }
 
@@ -62,8 +66,24 @@ function renderList(sites) {
         `;
         li.querySelector('.remove-btn').addEventListener('click', async () => {
             await removeSite(hostname);
+
+            // Clear elapsed and popupShown for the removed site
+            const session = await chrome.storage.session.get({ elapsed: {}, popupShown: {} });
+            const elapsed = { ...session.elapsed };
+            const popupShown = { ...session.popupShown };
+            delete elapsed[hostname];
+            delete popupShown[hostname];
+            await chrome.storage.session.set({ elapsed, popupShown, lastActiveTime: Date.now() });
+
+            // Hide overlay on the active tab if it's showing for this site
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tab) {
+                chrome.tabs.sendMessage(tab.id, { type: 'HIDE_OVERLAY' });
+            }
+
             const { trackedSites } = await getSettings();
             renderList(trackedSites);
+            updateSessionTimer();
         });
         siteList.appendChild(li);
     });
@@ -79,8 +99,8 @@ addForm.addEventListener('submit', async (e) => {
         return;
     }
 
-    // Strip protocol if user accidentally typed it
-    const hostname = raw.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    // Strip protocol and www.
+    const hostname = normalizeHostname(raw.replace(/^https?:\/\//, '').replace(/\/.*$/, ''));
 
     const { trackedSites } = await getSettings();
     if (trackedSites.includes(hostname)) {
@@ -90,8 +110,18 @@ addForm.addEventListener('submit', async (e) => {
 
     await addSite(hostname);
     siteInput.value = '';
+
+    // Reset elapsed counter so tracking starts fresh from now
+    const session = await chrome.storage.session.get({ elapsed: {}, popupShown: {} });
+    const elapsed = { ...session.elapsed };
+    const popupShown = { ...session.popupShown };
+    delete elapsed[hostname];
+    delete popupShown[hostname];
+    await chrome.storage.session.set({ elapsed, popupShown, lastActiveTime: Date.now() });
+
     const updated = await getSettings();
     renderList(updated.trackedSites);
+    updateSessionTimer();
 });
 
 const difficultySelect = document.getElementById('difficulty-select');
@@ -131,6 +161,25 @@ async function saveDuration() {
     console.log(`[TimeNudge] popup: saving duration → ${total}s (${mins}m ${secs}s)`);
     await saveDefaultThreshold(total);
     durationCurrent.textContent = formatDuration(total);
+
+    // Reset the counter for the active tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab && tab.url) {
+        try {
+            const hostname = normalizeHostname(new URL(tab.url).hostname);
+            const session = await chrome.storage.session.get({ elapsed: {}, popupShown: {} });
+            const elapsed = { ...session.elapsed };
+            const popupShown = { ...session.popupShown };
+            delete elapsed[hostname];
+            delete popupShown[hostname];
+            await chrome.storage.session.set({ elapsed, popupShown, lastActiveTime: Date.now() });
+            console.log(`[TimeNudge] popup: reset counter for ${hostname}`);
+            chrome.tabs.sendMessage(tab.id, { type: 'HIDE_OVERLAY' });
+            chrome.runtime.sendMessage({ type: 'RESET_TIMER', hostname });
+        } catch {
+            // non-http tab, ignore
+        }
+    }
 }
 
 const durationApply = document.getElementById('duration-apply');
