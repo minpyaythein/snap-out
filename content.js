@@ -162,6 +162,25 @@ function generateProblem(difficulty = 'hard') {
     return generateArithmetic(config);
 }
 
+function showBanner(hostname) {
+    if (document.getElementById(OVERLAY_ID)) return;
+
+    const banner = document.createElement('div');
+    banner.id = OVERLAY_ID;
+    banner.className = 'time-nudge-banner';
+    banner.innerHTML = `
+        <span>⏰ You've been on <strong>${hostname}</strong> for a while. Time for a break?</span>
+        <button class="time-nudge-banner-dismiss">Dismiss</button>
+    `;
+
+    banner.querySelector('.time-nudge-banner-dismiss').addEventListener('click', () => {
+        banner.remove();
+        chrome.runtime.sendMessage({ type: 'DISMISS_POPUP', hostname });
+    });
+
+    document.body.appendChild(banner);
+}
+
 function showPopup(hostname, difficulty = 'hard') {
     if (document.getElementById(OVERLAY_ID)) return;
 
@@ -214,6 +233,10 @@ function showPopup(hostname, difficulty = 'hard') {
 
 chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'SHOW_POPUP') {
-        showPopup(message.hostname, message.difficulty);
+        if (message.difficulty === 'none') {
+            showBanner(message.hostname);
+        } else {
+            showPopup(message.hostname, message.difficulty);
+        }
     }
 });

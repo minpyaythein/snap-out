@@ -1,7 +1,7 @@
-const DEFAULT_THRESHOLD = 30; // seconds
+const DEFAULT_THRESHOLD = 300; // seconds (fallback when no defaultThreshold in storage)
 
 async function getSettings() {
-    const result = await chrome.storage.sync.get({ trackedSites: [], thresholds: {}, difficultyLevel: 'hard' });
+    const result = await chrome.storage.sync.get({ trackedSites: [], thresholds: {}, difficultyLevel: 'hard', defaultThreshold: null });
     return result;
 }
 
@@ -10,8 +10,22 @@ async function saveSettings(settings) {
 }
 
 async function getThreshold(hostname) {
-    const { thresholds } = await getSettings();
-    return thresholds[hostname] ?? DEFAULT_THRESHOLD;
+    const { thresholds, defaultThreshold } = await getSettings();
+    if (thresholds[hostname] != null) {
+        console.log(`[TimeNudge] getThreshold(${hostname}): using per-site override → ${thresholds[hostname]}s`);
+        return thresholds[hostname];
+    }
+    if (defaultThreshold != null) {
+        console.log(`[TimeNudge] getThreshold(${hostname}): using defaultThreshold → ${defaultThreshold}s`);
+        return defaultThreshold;
+    }
+    console.log(`[TimeNudge] getThreshold(${hostname}): no saved threshold, using hardcoded default → ${DEFAULT_THRESHOLD}s`);
+    return DEFAULT_THRESHOLD;
+}
+
+async function saveDefaultThreshold(seconds) {
+    await chrome.storage.sync.set({ defaultThreshold: seconds });
+    console.log(`[TimeNudge] saveDefaultThreshold: saved ${seconds}s`);
 }
 
 async function getDifficulty() {

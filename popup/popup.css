@@ -120,6 +120,121 @@ h1 {
   color: #e53e3e;
 }
 
+.session-timer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    margin-top: 10px;
+    background: #f0f0ff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.session-timer #session-hostname {
+    color: #555;
+    font-weight: 500;
+}
+
+.session-timer #session-elapsed {
+    color: #6366f1;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.duration-section {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #ebebeb;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.duration-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.duration-section label {
+    font-size: 13px;
+    color: #555;
+    flex-shrink: 0;
+}
+
+#duration-current {
+    font-size: 12px;
+    color: #6366f1;
+    font-weight: 500;
+}
+
+.duration-inputs {
+    display: flex;
+    gap: 8px;
+}
+
+.duration-field {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.duration-field input {
+    width: 52px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 13px;
+    color: #1a1a1a;
+    background: #fff;
+    outline: none;
+    text-align: center;
+    transition: border-color 0.15s;
+}
+
+.duration-field input:focus {
+    border-color: #6366f1;
+}
+
+.duration-field span {
+    font-size: 12px;
+    color: #888;
+}
+
+#duration-apply {
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    width: 100%;
+}
+
+#duration-apply:hover {
+    background: #4f46e5;
+}
+
+#duration-apply:active {
+    transform: scale(0.96);
+}
+
+@keyframes apply-success {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.15); }
+    70%  { transform: scale(0.95); }
+    100% { transform: scale(1); }
+}
+
+#duration-apply.applied {
+    animation: apply-success 0.35s ease forwards;
+}
+
 .difficulty-section {
     margin-top: 16px;
     padding-top: 14px;

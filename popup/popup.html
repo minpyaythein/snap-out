@@ -25,9 +25,33 @@
 
         <ul id="site-list"></ul>
 
+        <div id="session-timer" class="session-timer hidden">
+            <span id="session-hostname"></span>
+            <span id="session-elapsed"></span>
+        </div>
+
+        <div class="duration-section">
+            <div class="duration-header">
+                <label>Alert after</label>
+                <span id="duration-current"></span>
+            </div>
+            <div class="duration-inputs">
+                <div class="duration-field">
+                    <input type="number" id="duration-min" min="0" max="30" value="5" />
+                    <span>min</span>
+                </div>
+                <div class="duration-field">
+                    <input type="number" id="duration-sec" min="0" max="59" value="0" />
+                    <span>sec</span>
+                </div>
+            </div>
+            <button type="button" id="duration-apply">Apply</button>
+        </div>
+
         <div class="difficulty-section">
             <label for="difficulty-select">Math difficulty</label>
             <select id="difficulty-select">
+                <option value="none">None (just alert)</option>
                 <option value="easy">Easy</option>
                 <option value="medium">Medium</option>
                 <option value="hard">Hard</option>

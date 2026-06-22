@@ -3,6 +3,7 @@ importScripts('storage.js');
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const ALARM_NAME = 'site-tracker-tick';
+const THRESHOLD_ALARM_PREFIX = 'threshold-trigger-';
 
 // ─── Session state (survives SW restarts within same browser session) ─────────
 
@@ -113,6 +114,7 @@ async function pauseTracking() {
 chrome.tabs.onActivated.addListener(async () => {
     console.log('[TimeNudge] Event: tab activated');
     await updateActiveTab();
+    await checkThreshold('tab-activated');
 });
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
@@ -121,6 +123,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
         if (activeTab && activeTab.id === tabId) {
             console.log('[TimeNudge] Event: tab updated (navigation complete)');
             await updateActiveTab();
+            await checkThreshold('tab-updated');
         }
     }
 });
@@ -135,6 +138,7 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
         console.log('[TimeNudge] Event: window gained focus, resuming timer');
         await setSessionState({ windowFocused: true, lastActiveTime: Date.now() });
         await updateActiveTab();
+        await checkThreshold('focus-gain');
     }
 });
 
@@ -170,42 +174,54 @@ async function sendPopupMessage(tabId, hostname) {
     });
 }
 
-// ─── Alarm tick: check elapsed time ──────────────────────────────────────────
+// ─── Threshold check (used by alarm and focus-gain) ──────────────────────────
 
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-    if (alarm.name !== ALARM_NAME) return;
-
+async function checkThreshold(source) {
     const state = await getSessionState();
     if (!state.windowFocused || !state.activeHostname) {
-        console.log('[TimeNudge] Alarm tick: skipped (window not focused or no active hostname)');
+        console.log(`[TimeNudge] checkThreshold (${source}): skipped (window not focused or no active hostname)`);
         return;
     }
 
-    const { trackedSites, thresholds } = await getSettings();
+    const { trackedSites } = await getSettings();
     const hostname = state.activeHostname;
 
     if (!trackedSites.includes(hostname)) {
-        console.log(`[TimeNudge] Alarm tick: ${hostname} is not in tracked list, resetting lastActiveTime`);
-        await setSessionState({ lastActiveTime: Date.now() });
+        console.log(`[TimeNudge] checkThreshold (${source}): ${hostname} not tracked`);
         return;
     }
 
     const flushed = await flushElapsed(state);
     const elapsed = flushed.elapsed[hostname] || 0;
-    const threshold = thresholds[hostname] ?? DEFAULT_THRESHOLD;
+    const threshold = await getThreshold(hostname);
 
-    console.log(`[TimeNudge] Alarm tick: ${hostname} — ${elapsed}s / ${threshold}s`);
+    console.log(`[TimeNudge] checkThreshold (${source}): ${hostname} — counting ${elapsed}s / threshold ${threshold}s (${Math.round((elapsed / threshold) * 100)}%)`);
 
     if (elapsed >= threshold && !flushed.popupShown[hostname]) {
-        console.log(`[TimeNudge] Alarm tick: threshold reached for ${hostname}, showing popup`);
+        console.log(`[TimeNudge] checkThreshold (${source}): threshold reached for ${hostname}, showing popup`);
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (tab) {
             await sendPopupMessage(tab.id, hostname);
             const popupShown = { ...flushed.popupShown, [hostname]: true };
             await setSessionState({ popupShown });
         } else {
-            console.warn('[TimeNudge] Alarm tick: no active tab found to send popup');
+            console.warn(`[TimeNudge] checkThreshold (${source}): no active tab found`);
         }
+    } else if (elapsed < threshold) {
+        const remaining = threshold - elapsed;
+        const alarmName = THRESHOLD_ALARM_PREFIX + hostname;
+        console.log(`[TimeNudge] checkThreshold (${source}): scheduling one-shot alarm in ${remaining}s`);
+        chrome.alarms.create(alarmName, { delayInMinutes: remaining / 60 });
+    }
+}
+
+// ─── Alarm tick: check elapsed time ──────────────────────────────────────────
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name === ALARM_NAME) {
+        await checkThreshold('alarm');
+    } else if (alarm.name.startsWith(THRESHOLD_ALARM_PREFIX)) {
+        await checkThreshold('threshold-alarm');
     }
 });
 
