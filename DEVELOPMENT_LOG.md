@@ -180,6 +180,10 @@ Note: the `window.__snapOutListener` once-guard still means an orphaned tab won'
 
 With zero tracked sites the popup showed "No sites tracked yet" twice — once in the list's empty `<li>` and once in the session-timer placeholder. `updateSessionTimer` now hides the session timer entirely when `trackedSites.length === 0` (the list already conveys it). The placeholder is reserved for "you have sites, just not on one right now": `Not tracking this site` (untracked tab) / `No active timer` (non-web tab).
 
+## Phase 19 — Extension icon (2026-06-22)
+
+Replaced the flat placeholder `icons/icon48.png` / `icon128.png` with a real mark: a rounded-squircle in the brand indigo→violet gradient (`#6366f1 → #8b5cf6`) and a white hourglass glyph (time's-up theme). Generated with a small pure-Python script (stdlib `zlib`/`struct`, supersampled 4–8× for anti-aliasing) since no SVG rasterizer / Pillow was available; the script isn't committed. RGBA with transparent corners. Manifest already referenced both sizes, so no manifest change.
+
 ---
 
 ## How the shape evolved
