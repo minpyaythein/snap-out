@@ -86,6 +86,45 @@ Also landed in this commit (commit message "add timer settings and **no math opt
 - **CSS specificity split** — `#time-nudge-overlay` → `#time-nudge-overlay.time-nudge-popup`, so the full-screen fixed-modal styling only applies to the math popup; the `none`-mode banner (which lacks that class) keeps its lightweight look.
 - **`updateSessionTimer()` hardening** — bails and hides the live timer cleanly for non-trackable / non-URL tabs instead of throwing.
 
+## Phase 6 — Code-review hardening (2026-06-22)
+
+A review pass focused on the timer engine. No behavior contract changed; these tighten correctness and robustness:
+
+- **Serialized session-state mutations.** All event handlers (periodic alarm, `tabs.onActivated`/`onUpdated`, `windows.onFocusChanged`, the one-shot threshold alarm, the short-threshold `setTimeout`, and the `RESET_TIMER`/`DISMISS_POPUP` messages) now run through a single-promise lock (`runExclusive`). They each read-modify-write `chrome.storage.session`, which isn't atomic — concurrent handlers could clobber each other (lost elapsed seconds, a `popupShown` flag that never stuck). Internal helpers (`checkThreshold`, `updateActiveTab`, …) deliberately do **not** lock, so they can be called from within an already-held lock without deadlocking.
+- **Fixed slow timer drift.** `flushElapsed` used to reset `lastActiveTime` to `now`, discarding the sub-second remainder on every flush; with flushes firing on each event the dropped fractions accumulated and the timer under-counted. It now advances `lastActiveTime` by exactly `delta * 1000`, carrying the remainder forward.
+- **Same-domain tab switches no longer drop time.** `updateActiveTab` used to flush only when the hostname *changed*, but reset `lastActiveTime` unconditionally — so switching between two tabs of the same domain discarded the un-flushed seconds each time. It now flushes on every call (attributed to the old `activeHostname`) before moving `lastActiveTime`. Time is tracked per-hostname, so multiple tabs of one domain correctly share a single counter.
+- **Stale-schedule cleanup.** Leaving a site now clears its `pendingTimeouts` entry and one-shot `threshold-trigger-*` alarm, so they don't fire stray wakeups later.
+- **`tab.id` guard** before `sendPopupMessage` (skip tabs with no id instead of throwing).
+- **content.js**: hostname / problem text now set via `textContent` instead of being interpolated into `innerHTML` (defensive, cleaner), and the math input auto-focuses when the overlay appears.
+- **popup.js**: the live session timer only adds un-flushed time when the popup's site is the one actually being tracked right now (active tab + focused window); otherwise it's paused.
+
+## Phase 7 — Multi-tab overlays (2026-06-22)
+
+The nudge now spans every open tab of a hostname instead of only the tab that happened to be active when the threshold hit.
+
+- **Broadcast on fire.** `checkThreshold` resolves all tabs of the hostname (`getTabsForHostname`, across every window) and sends `SHOW_POPUP` to each.
+- **Dismiss-on-one = dismiss-on-all.** Solving the challenge on any tab resets the timer *and* tears down the overlay on every other tab of that hostname (`hideOverlaysForHostname`, invoked from the `DISMISS_POPUP` handler). Same teardown runs on duration change (`RESET_TIMER`) and site removal (new `HIDE_ALL_OVERLAYS` message the popup sends).
+- **Catch-up for late tabs + reload-escape fix.** `SHOW_POPUP` now carries a `force` flag. The fire path uses `force: true` (rebuild + fresh problem). A new `checkThreshold` branch — when the threshold is already met and `popupShown` is set — pushes `SHOW_POPUP` with `force: false` to the active tab, so a tab opened/navigated/**reloaded** into the site after the broadcast still gets the overlay. `content.js` ignores a `force: false` message when an overlay is already present, so it never wipes a half-typed answer or regenerates the problem on the 30s tick. This also closes the old "reload the page to escape the nudge" gap.
+
+Time is still tracked per-hostname (one shared counter), so multiple tabs of one site don't double-count.
+
+## Phase 8 — Apply no longer resets the timer (2026-06-22)
+
+Previously clicking **Apply** on the duration setting wiped the active site's elapsed counter. Two problems: it was an escape hatch (re-apply → fresh countdown, bypassing the whole interrupt), and it was inconsistent — the duration is *global* but the reset only touched the active tab's site.
+
+New model: the threshold is "nudge me once I've been here this long," elapsed is real time spent, and changing the threshold doesn't erase reality.
+
+- `RESET_TIMER` renamed to **`THRESHOLD_CHANGED`**. The popup just persists the new `defaultThreshold` and sends the message; it no longer deletes `elapsed`/`popupShown`.
+- The handler drops the stale schedule, flushes, then compares accumulated time to the *new* threshold via `checkThreshold`. Already over → nudge fires immediately. Raised the limit back above your current time while a nudge was showing → it clears the overlay + `popupShown` and keeps counting (this clear-on-raise is the one thing `checkThreshold` can't do itself, since it only ever sets `popupShown`).
+- Only the active site is re-evaluated; backgrounded tracked sites re-evaluate naturally on `tabs.onActivated`/`onUpdated` when you return to them.
+
+## Phase 9 — Duration input validation (2026-06-22)
+
+The duration fields previously only clamped *minutes* (≥30 → 30), on Apply. Seconds were never capped — typing `90` in the seconds box gave a 90-second component — and `type="number"` let you enter `e`/`.`/`-`. Now:
+
+- **Live in `popup.js`:** a `beforeinput` guard rejects any non-digit insertion (typing or mixed paste), and an `input` handler clamps minutes to 0–30 and seconds to 0–59, with seconds forced to 0 once minutes hits 30 (the 30:00 overall cap).
+- **On Apply:** `saveDuration` computes the total and clamps it to `[MIN_DURATION 10s, MAX_DURATION 1800s]`, then reflects the normalized value back into both fields. Belt-and-suspenders over the live clamps.
+
 ---
 
 ## How the shape evolved

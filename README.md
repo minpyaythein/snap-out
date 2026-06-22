@@ -22,6 +22,8 @@ Ever looked up and realized you've been scrolling for an hour without meaning to
 
 Prefer a gentler nudge? Set the difficulty to **None** and you'll get a plain dismissible banner instead of a math challenge — no solving required.
 
+**Works across tabs.** Time on a site is counted across every tab of that site (two YouTube tabs share one timer). When the alert fires it appears on *all* of them, and solving it on any one tab clears it everywhere. Opening a new tab — or reloading the page — won't sneak you past it.
+
 ---
 
 ## Difficulty levels

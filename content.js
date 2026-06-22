@@ -167,9 +167,11 @@ function showBanner(hostname) {
     banner.id = OVERLAY_ID;
     banner.className = 'time-nudge-banner';
     banner.innerHTML = `
-        <span>⏰ You've been on <strong>${hostname}</strong> for a while. Time for a break?</span>
+        <span>⏰ You've been on <strong class="time-nudge-host"></strong> for a while. Time for a break?</span>
         <button class="time-nudge-banner-dismiss">Dismiss</button>
     `;
+    // Set the hostname via textContent rather than interpolating into innerHTML.
+    banner.querySelector('.time-nudge-host').textContent = hostname;
 
     banner.querySelector('.time-nudge-banner-dismiss').addEventListener('click', () => {
         banner.remove();
@@ -191,10 +193,10 @@ function showPopup(hostname, difficulty = 'hard') {
     overlay.innerHTML = `
         <div class="time-nudge-box">
             <p class="time-nudge-message">
-                You've been on <strong>${hostname}</strong> for a while.<br>
+                You've been on <strong class="time-nudge-host"></strong> for a while.<br>
                 Solve this to take a break!
             </p>
-            <p class="time-nudge-problem">${problem.question}</p>
+            <p class="time-nudge-problem"></p>
             <input class="time-nudge-input" type="number" placeholder="Your answer" />
             <p class="time-nudge-error"></p>
             <button class="time-nudge-check">Check</button>
@@ -205,6 +207,10 @@ function showPopup(hostname, difficulty = 'hard') {
     const errorEl = overlay.querySelector('.time-nudge-error');
     const problemEl = overlay.querySelector('.time-nudge-problem');
     const checkBtn = overlay.querySelector('.time-nudge-check');
+
+    // Set dynamic text via textContent rather than interpolating into innerHTML.
+    overlay.querySelector('.time-nudge-host').textContent = hostname;
+    problemEl.textContent = problem.question;
 
     function validate() {
         const userAnswer = parseInt(input.value.trim(), 10);
@@ -228,12 +234,20 @@ function showPopup(hostname, difficulty = 'hard') {
     });
 
     document.body.appendChild(overlay);
+    input.focus();
 }
 
 if (!window.__snapOutListener) {
     window.__snapOutListener = true;
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         if (message.type === 'SHOW_POPUP') {
+            // force=false is a catch-up broadcast: only show if there's no
+            // overlay yet, so we never wipe a problem the user is mid-answer on.
+            const existing = document.getElementById(OVERLAY_ID);
+            if (existing && message.force === false) {
+                sendResponse({ ok: true });
+                return;
+            }
             if (message.difficulty === 'none') {
                 showBanner(message.hostname);
             } else {

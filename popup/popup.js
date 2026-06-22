@@ -24,9 +24,12 @@ async function updateSessionTimer() {
         return;
     }
 
-    const session = await chrome.storage.session.get({ elapsed: {}, lastActiveTime: null });
+    const session = await chrome.storage.session.get({ elapsed: {}, lastActiveTime: null, activeHostname: null, windowFocused: true });
     const storedElapsed = session.elapsed[hostname] || 0;
-    const liveExtra = session.lastActiveTime ? Math.floor((Date.now() - session.lastActiveTime) / 1000) : 0;
+    // Only add the un-flushed live time when this is the site actually being
+    // tracked right now (active tab + focused window), otherwise it's paused.
+    const isLive = session.windowFocused && session.activeHostname === hostname && session.lastActiveTime;
+    const liveExtra = isLive ? Math.floor((Date.now() - session.lastActiveTime) / 1000) : 0;
     const elapsed = storedElapsed + liveExtra;
     const threshold = await getThreshold(hostname);
 
@@ -75,11 +78,8 @@ function renderList(sites) {
             delete popupShown[hostname];
             await chrome.storage.session.set({ elapsed, popupShown, lastActiveTime: Date.now() });
 
-            // Hide overlay on the active tab if it's showing for this site
-            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (tab) {
-                chrome.tabs.sendMessage(tab.id, { type: 'HIDE_OVERLAY' });
-            }
+            // Hide the overlay on every tab of this site, not just the active one.
+            chrome.runtime.sendMessage({ type: 'HIDE_ALL_OVERLAYS', hostname });
 
             const { trackedSites } = await getSettings();
             renderList(trackedSites);
@@ -134,48 +134,73 @@ const durationMin = document.getElementById('duration-min');
 const durationSec = document.getElementById('duration-sec');
 const durationCurrent = document.getElementById('duration-current');
 
+// Reject any inserted text (typing or paste) that isn't a digit, so the fields
+// can never hold `e`, `.`, `-`, etc. that a number input would otherwise allow.
+function blockNonDigits(e) {
+    if (e.data != null && /\D/.test(e.data)) e.preventDefault();
+}
+
+// Clamp live: minutes 0–30, seconds 0–59, and 30 min is the overall cap (so at
+// 30 minutes the seconds are forced to 0). Empty mid-edit is left alone.
+function clampDurationInputs() {
+    let mins = parseInt(durationMin.value, 10);
+    if (!Number.isNaN(mins)) {
+        if (mins > 30) mins = 30;
+        if (mins < 0) mins = 0;
+        durationMin.value = mins;
+    }
+
+    let secs = parseInt(durationSec.value, 10);
+    if (!Number.isNaN(secs)) {
+        const secMax = mins >= 30 ? 0 : 59;
+        if (secs > secMax) secs = secMax;
+        if (secs < 0) secs = 0;
+        durationSec.value = secs;
+    }
+}
+
+durationMin.addEventListener('beforeinput', blockNonDigits);
+durationSec.addEventListener('beforeinput', blockNonDigits);
+durationMin.addEventListener('input', clampDurationInputs);
+durationSec.addEventListener('input', clampDurationInputs);
+
 function formatDuration(seconds) {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return s > 0 ? `${m}m ${s}s` : `${m}m`;
 }
 
+const MAX_DURATION = 1800; // 30 minutes
+const MIN_DURATION = 10;   // 10 seconds
+
 async function saveDuration() {
     let mins = parseInt(durationMin.value, 10) || 0;
     let secs = parseInt(durationSec.value, 10) || 0;
-
-    if (mins >= 30) {
-        mins = 30;
-        secs = 0;
-        durationMin.value = 30;
-        durationSec.value = 0;
-    }
+    if (mins < 0) mins = 0;
+    if (secs < 0) secs = 0;
+    if (secs > 59) secs = 59;
 
     let total = mins * 60 + secs;
-    if (total < 10) {
-        total = 10;
-        durationMin.value = 0;
-        durationSec.value = 10;
-    }
+    total = Math.min(MAX_DURATION, Math.max(MIN_DURATION, total));
 
-    console.log(`[TimeNudge] popup: saving duration → ${total}s (${mins}m ${secs}s)`);
+    // Reflect the normalized value back into the inputs.
+    durationMin.value = Math.floor(total / 60);
+    durationSec.value = total % 60;
+
+    console.log(`[TimeNudge] popup: saving duration → ${total}s`);
     await saveDefaultThreshold(total);
     durationCurrent.textContent = formatDuration(total);
 
-    // Reset the counter for the active tab
+    // Apply the new limit to the active site WITHOUT wiping accumulated time.
+    // The background re-evaluates against the new threshold: if you're already
+    // over it you get nudged now; if you raised it back above your current time
+    // any showing nudge clears and the timer keeps running.
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab && tab.url) {
         try {
             const hostname = normalizeHostname(new URL(tab.url).hostname);
-            const session = await chrome.storage.session.get({ elapsed: {}, popupShown: {} });
-            const elapsed = { ...session.elapsed };
-            const popupShown = { ...session.popupShown };
-            delete elapsed[hostname];
-            delete popupShown[hostname];
-            await chrome.storage.session.set({ elapsed, popupShown, lastActiveTime: Date.now() });
-            console.log(`[TimeNudge] popup: reset counter for ${hostname}`);
-            chrome.tabs.sendMessage(tab.id, { type: 'HIDE_OVERLAY' });
-            chrome.runtime.sendMessage({ type: 'RESET_TIMER', hostname });
+            console.log(`[TimeNudge] popup: threshold changed → ${total}s, re-evaluating ${hostname}`);
+            chrome.runtime.sendMessage({ type: 'THRESHOLD_CHANGED', hostname });
         } catch {
             // non-http tab, ignore
         }
