@@ -125,6 +125,21 @@ The duration fields previously only clamped *minutes* (≥30 → 30), on Apply. 
 - **Live in `popup.js`:** a `beforeinput` guard rejects any non-digit insertion (typing or mixed paste), and an `input` handler clamps minutes to 0–30 and seconds to 0–59, with seconds forced to 0 once minutes hits 30 (the 30:00 overall cap).
 - **On Apply:** `saveDuration` computes the total and clamps it to `[MIN_DURATION 10s, MAX_DURATION 1800s]`, then reflects the normalized value back into both fields. Belt-and-suspenders over the live clamps.
 
+## Phase 10 — Session-timer freeze fix + empty states (2026-06-22)
+
+**Bug:** removing a tracked site left the popup's countdown + hostname frozen on screen. Root cause was CSS, not JS: `.hidden { display: none }` and `.session-timer { display: flex }` have equal specificity, and `.session-timer` is defined *later* in `popup.css`, so it won out — `classList.add('hidden')` never actually hid the bar. Fixed `.hidden` with `!important`.
+
+**Also:** the timer used to vanish whenever you weren't on a tracked site. Now `updateSessionTimer` always renders a meaningful state — the live countdown on a tracked site, or a muted, centered placeholder otherwise: `No active timer` (non-web tab), `Not tracking this site` (untracked site, others exist), or `No sites tracked yet` (nothing tracked at all). The placeholder uses a new `.session-timer.placeholder` style.
+
+## Phase 11 — Add-site validation (2026-06-22)
+
+The add box used to accept anything after stripping protocol/path — typing `hello` happily tracked a bogus "site." Now `popup.js`:
+
+- Extracts the hostname via the `URL` parser (handles protocol, path, port, query, and non-ASCII → punycode) instead of regex string-stripping.
+- Validates it with `isValidHostname` — dot-separated labels ending in a 2+ char alphabetic TLD — so bare words (`hello`, `youtube`), malformed input (`-bad.com`, `site.c`), IPs, and `localhost` are rejected with **"Enter a valid site, e.g. youtube.com"**.
+
+Trade-off noted: IP addresses and `localhost` are intentionally rejected (not the target use case for a distraction tracker).
+
 ---
 
 ## How the shape evolved

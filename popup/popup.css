@@ -72,7 +72,9 @@ h1 {
 }
 
 .hidden {
-  display: none;
+  /* !important so it wins against later same-specificity rules like
+     `.session-timer { display: flex }`, which otherwise override it. */
+  display: none !important;
 }
 
 #site-list {
@@ -141,6 +143,18 @@ h1 {
     color: #6366f1;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+}
+
+/* Shown when the current tab isn't a tracked site — a muted, centered note
+   instead of a live countdown. */
+.session-timer.placeholder {
+    justify-content: center;
+    background: #f5f5f7;
+}
+
+.session-timer.placeholder #session-hostname {
+    color: #999;
+    font-weight: 400;
 }
 
 .duration-section {

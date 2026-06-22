@@ -3,24 +3,34 @@ const sessionTimer = document.getElementById('session-timer');
 const sessionHostname = document.getElementById('session-hostname');
 const sessionElapsed = document.getElementById('session-elapsed');
 
+// Render a muted, centered note in the session-timer area (no live countdown).
+function showSessionMessage(msg) {
+    sessionHostname.textContent = msg;
+    sessionElapsed.textContent = '';
+    sessionTimer.classList.add('placeholder');
+    sessionTimer.classList.remove('hidden');
+}
+
 async function updateSessionTimer() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url) {
-        sessionTimer.classList.add('hidden');
-        return;
-    }
 
-    let hostname;
-    try {
-        hostname = normalizeHostname(new URL(tab.url).hostname);
-    } catch {
-        sessionTimer.classList.add('hidden');
-        return;
+    let hostname = null;
+    if (tab && tab.url) {
+        try {
+            hostname = normalizeHostname(new URL(tab.url).hostname);
+        } catch {
+            hostname = null;
+        }
     }
 
     const { trackedSites } = await getSettings();
+
+    if (!hostname) {
+        showSessionMessage('No active timer');
+        return;
+    }
     if (!trackedSites.includes(hostname)) {
-        sessionTimer.classList.add('hidden');
+        showSessionMessage(trackedSites.length ? 'Not tracking this site' : 'No sites tracked yet');
         return;
     }
 
@@ -35,6 +45,7 @@ async function updateSessionTimer() {
 
     sessionHostname.textContent = hostname;
     sessionElapsed.textContent = `${elapsed}s / ${threshold}s`;
+    sessionTimer.classList.remove('placeholder');
     sessionTimer.classList.remove('hidden');
 }
 
@@ -89,18 +100,38 @@ function renderList(sites) {
     });
 }
 
+// A real domain: dot-separated labels (letters/digits/hyphens, no leading or
+// trailing hyphen) ending in an alphabetic TLD of 2+ chars. Rejects bare words
+// like "hello" and malformed input, but accepts youtube.com, mail.google.com,
+// and punycode (xn--…) that the URL parser produces for non-ASCII domains.
+function isValidHostname(host) {
+    return /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/.test(host);
+}
+
 addForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearError();
 
     const raw = siteInput.value.trim().toLowerCase();
     if (!raw) {
-        showError('Please enter a hostname.');
+        showError('Please enter a site.');
         return;
     }
 
-    // Strip protocol and www.
-    const hostname = normalizeHostname(raw.replace(/^https?:\/\//, '').replace(/\/.*$/, ''));
+    // Pull out just the hostname — the URL parser handles protocol, path, port,
+    // query, and non-ASCII (→ punycode) for us.
+    let hostname;
+    try {
+        hostname = new URL(raw.includes('://') ? raw : `https://${raw}`).hostname;
+    } catch {
+        hostname = '';
+    }
+    hostname = normalizeHostname(hostname).replace(/\.$/, '');
+
+    if (!isValidHostname(hostname)) {
+        showError('Enter a valid site, e.g. youtube.com');
+        return;
+    }
 
     const { trackedSites } = await getSettings();
     if (trackedSites.includes(hostname)) {
