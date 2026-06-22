@@ -9,17 +9,18 @@
 <body>
     <div class="container">
         <h1>Snap Out</h1>
-        <p class="subtitle">Track sites you want to spend less time on.</p>
+        <p class="subtitle" data-i18n="subtitle">Track sites you want to spend less time on.</p>
 
         <form id="add-form">
             <input
                 type="text"
                 id="site-input"
                 placeholder="e.g. youtube.com"
+                data-i18n-placeholder="addPlaceholder"
                 autocomplete="off"
                 spellcheck="false"
             />
-            <button type="submit">Add</button>
+            <button type="submit" data-i18n="addButton">Add</button>
         </form>
         <p id="error-msg" class="error hidden"></p>
 
@@ -32,36 +33,45 @@
 
         <div class="duration-section">
             <div class="duration-header">
-                <label>Alert after</label>
+                <label data-i18n="alertAfter">Alert after</label>
                 <span id="duration-current"></span>
             </div>
             <div class="duration-inputs">
                 <div class="duration-field">
                     <input type="number" id="duration-min" inputmode="numeric" min="0" max="30" step="1" value="5" />
-                    <span>min</span>
+                    <span data-i18n="minLabel">min</span>
                 </div>
                 <div class="duration-field">
                     <input type="number" id="duration-sec" inputmode="numeric" min="0" max="59" step="1" value="0" />
-                    <span>sec</span>
+                    <span data-i18n="secLabel">sec</span>
                 </div>
             </div>
-            <button type="button" id="duration-apply">Apply</button>
+            <button type="button" id="duration-apply" data-i18n="applyButton">Apply</button>
         </div>
 
         <div class="difficulty-section">
-            <label for="difficulty-select">Math difficulty</label>
+            <label for="difficulty-select" data-i18n="mathDifficulty">Math difficulty</label>
             <select id="difficulty-select">
-                <option value="none">None (just alert)</option>
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-                <option value="very-hard">Very Hard</option>
-                <option value="super-hard">Super Hard</option>
-                <option value="impossible">Impossible</option>
+                <option value="none" data-i18n="diffNone">None (just alert)</option>
+                <option value="easy" data-i18n="diffEasy">Easy</option>
+                <option value="medium" data-i18n="diffMedium">Medium</option>
+                <option value="hard" data-i18n="diffHard">Hard</option>
+                <option value="very-hard" data-i18n="diffVeryHard">Very Hard</option>
+                <option value="super-hard" data-i18n="diffSuperHard">Super Hard</option>
+                <option value="impossible" data-i18n="diffImpossible">Impossible</option>
+            </select>
+        </div>
+
+        <div class="language-section">
+            <label for="language-select" data-i18n="languageLabel">Language</label>
+            <select id="language-select">
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
             </select>
         </div>
     </div>
     <script src="../storage.js"></script>
+    <script src="../i18n.js"></script>
     <script src="popup.js"></script>
 </body>
 </html>

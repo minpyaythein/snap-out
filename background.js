@@ -219,8 +219,9 @@ function canInjectInto(url) {
 async function sendPopupMessage(tab, hostname, force = true) {
     const tabId = tab.id;
     const difficulty = await getDifficulty();
-    const payload = { type: 'SHOW_POPUP', hostname, difficulty, force };
-    console.log(`[TimeNudge] sendPopupMessage: sending SHOW_POPUP to tab ${tabId} for ${hostname} (difficulty: ${difficulty}, force: ${force})`);
+    const language = await getLanguage();
+    const payload = { type: 'SHOW_POPUP', hostname, difficulty, language, force };
+    console.log(`[TimeNudge] sendPopupMessage: sending SHOW_POPUP to tab ${tabId} for ${hostname} (difficulty: ${difficulty}, language: ${language}, force: ${force})`);
     chrome.tabs.sendMessage(tabId, payload, () => {
         if (!chrome.runtime.lastError) {
             console.log('[TimeNudge] sendPopupMessage: message delivered successfully');
@@ -234,7 +235,7 @@ async function sendPopupMessage(tab, hostname, force = true) {
         }
 
         console.warn('[TimeNudge] sendPopupMessage: content script missing, injecting manually...', chrome.runtime.lastError.message);
-        chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] })
+        chrome.scripting.executeScript({ target: { tabId }, files: ['i18n.js', 'content.js'] })
             .then(() => chrome.scripting.insertCSS({ target: { tabId }, files: ['content.css'] }))
             .then(() => {
                 console.log('[TimeNudge] sendPopupMessage: content script injected, retrying...');

@@ -3,6 +3,23 @@ const sessionTimer = document.getElementById('session-timer');
 const sessionHostname = document.getElementById('session-hostname');
 const sessionElapsed = document.getElementById('session-elapsed');
 
+// Current UI language. Set on load from storage; used by every helper that
+// renders a dynamic string (errors, session notes, the empty-list row). Static
+// markup is handled separately by applyTranslations().
+let currentLang = 'en';
+
+// Swap all static, attribute-tagged strings to `lang`. Re-run whenever the
+// language changes. The select's *value* is untouched (only option text), so
+// the chosen difficulty/language survives a relabel.
+function applyTranslations(lang) {
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+        el.textContent = t(el.dataset.i18n, lang);
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+        el.placeholder = t(el.dataset.i18nPlaceholder, lang);
+    });
+}
+
 // Render a muted, centered note in the session-timer area (no live countdown).
 function showSessionMessage(msg) {
     sessionHostname.textContent = msg;
@@ -33,11 +50,11 @@ async function updateSessionTimer() {
     }
 
     if (!hostname) {
-        showSessionMessage('No active timer');
+        showSessionMessage(t('sessionNoActive', currentLang));
         return;
     }
     if (!trackedSites.includes(hostname)) {
-        showSessionMessage('Not tracking this site');
+        showSessionMessage(t('sessionNotTracking', currentLang));
         return;
     }
 
@@ -50,8 +67,9 @@ async function updateSessionTimer() {
     const elapsed = storedElapsed + liveExtra;
     const threshold = await getThreshold(hostname);
 
+    const su = t('unitS', currentLang);
     sessionHostname.textContent = hostname;
-    sessionElapsed.textContent = `${elapsed}s / ${threshold}s`;
+    sessionElapsed.textContent = `${elapsed}${su} / ${threshold}${su}`;
     sessionTimer.classList.remove('placeholder');
     sessionTimer.classList.remove('hidden');
 }
@@ -76,14 +94,17 @@ function clearError() {
 function renderList(sites) {
     siteList.innerHTML = '';
     if (sites.length === 0) {
-        siteList.innerHTML = '<li class="empty">No sites tracked yet.</li>';
+        const li = document.createElement('li');
+        li.className = 'empty';
+        li.textContent = t('emptyList', currentLang);
+        siteList.appendChild(li);
         return;
     }
     sites.forEach(hostname => {
         const li = document.createElement('li');
         li.innerHTML = `
             <span class="hostname">${hostname}</span>
-            <button class="remove-btn" data-hostname="${hostname}" title="Remove">✕</button>
+            <button class="remove-btn" data-hostname="${hostname}" title="${t('removeTitle', currentLang)}">✕</button>
         `;
         li.querySelector('.remove-btn').addEventListener('click', async () => {
             await removeSite(hostname);
@@ -115,7 +136,7 @@ addForm.addEventListener('submit', async (e) => {
 
     const raw = siteInput.value.trim().toLowerCase();
     if (!raw) {
-        showError('Please enter a site.');
+        showError(t('errEnterSite', currentLang));
         return;
     }
 
@@ -130,17 +151,17 @@ addForm.addEventListener('submit', async (e) => {
     hostname = normalizeHostname(hostname).replace(/\.$/, '');
 
     if (!isValidHostname(hostname)) {
-        showError('Enter a valid site, e.g. youtube.com');
+        showError(t('errInvalidSite', currentLang));
         return;
     }
 
     const { trackedSites } = await getSettings();
     if (trackedSites.includes(hostname)) {
-        showError(`${hostname} is already tracked.`);
+        showError(tFormat('errAlreadyTracked', currentLang, { host: hostname }));
         return;
     }
     if (trackedSites.length >= MAX_SITES) {
-        showError(`You can track up to ${MAX_SITES} sites. Remove one to add another.`);
+        showError(tFormat('errMaxSites', currentLang, { max: MAX_SITES }));
         return;
     }
 
@@ -160,6 +181,20 @@ const difficultySelect = document.getElementById('difficulty-select');
 
 difficultySelect.addEventListener('change', async () => {
     await saveDifficulty(difficultySelect.value);
+});
+
+const languageSelect = document.getElementById('language-select');
+
+languageSelect.addEventListener('change', async () => {
+    currentLang = languageSelect.value;
+    await saveLanguage(currentLang);
+    applyTranslations(currentLang);
+    // Re-render the JS-driven strings too: the list (empty row + remove titles),
+    // the live duration label (localized units), and the session note.
+    const { trackedSites, defaultThreshold } = await getSettings();
+    renderList(trackedSites);
+    durationCurrent.textContent = formatDuration(defaultThreshold ?? 300);
+    updateSessionTimer();
 });
 
 const durationMin = document.getElementById('duration-min');
@@ -199,7 +234,9 @@ durationSec.addEventListener('input', clampDurationInputs);
 function formatDuration(seconds) {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
-    return s > 0 ? `${m}m ${s}s` : `${m}m`;
+    const mu = t('unitM', currentLang);
+    const su = t('unitS', currentLang);
+    return s > 0 ? `${m}${mu} ${s}${su}` : `${m}${mu}`;
 }
 
 const MAX_DURATION = 1800; // 30 minutes
@@ -245,13 +282,18 @@ durationApply.addEventListener('click', async () => {
     durationApply.textContent = '✓';
     durationApply.classList.add('applied');
     setTimeout(() => {
-        durationApply.textContent = 'Apply';
+        durationApply.textContent = t('applyButton', currentLang);
         durationApply.classList.remove('applied');
     }, 1200);
 });
 
 // Load on open
-getSettings().then(({ trackedSites, difficultyLevel, defaultThreshold }) => {
+getSettings().then(({ trackedSites, difficultyLevel, defaultThreshold, language }) => {
+    // Apply language before anything renders so we don't flash English first.
+    currentLang = language || 'en';
+    languageSelect.value = currentLang;
+    applyTranslations(currentLang);
+
     renderList(trackedSites);
     difficultySelect.value = difficultyLevel || 'hard';
 

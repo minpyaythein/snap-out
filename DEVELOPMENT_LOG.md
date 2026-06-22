@@ -184,6 +184,17 @@ With zero tracked sites the popup showed "No sites tracked yet" twice — once i
 
 Replaced the flat placeholder `icons/icon48.png` / `icon128.png` with a real mark: a rounded-squircle in the brand indigo→violet gradient (`#6366f1 → #8b5cf6`) and a white hourglass glyph (time's-up theme). Generated with a small pure-Python script (stdlib `zlib`/`struct`, supersampled 4–8× for anti-aliasing) since no SVG rasterizer / Pillow was available; the script isn't committed. RGBA with transparent corners. Manifest already referenced both sizes, so no manifest change.
 
+## Phase 20 — English / Japanese localization with a runtime toggle (2026-06-22)
+
+Added a user-facing **EN / JA language switch** (selector in the popup, next to difficulty). Why a custom layer instead of Chrome's built-in `chrome.i18n`: `chrome.i18n` picks the locale from the *browser's* UI language and can't be overridden at runtime, so it can't give an in-app toggle. We wanted the toggle, so a tiny dictionary module does it instead.
+
+- **`i18n.js`** (new, shared like `storage.js`) — holds `I18N_MESSAGES = { en, ja }` plus `t(key, lang)` (English fallback, then the key itself) and `tFormat(key, lang, params)` for `{host}`/`{max}` placeholders. The dictionary stays private; callers only touch `t`/`tFormat` (function declarations are shared across classic scripts in the same realm, so `content.js` can call them). Loaded in **three contexts**: the popup (`<script>` tag), the content script (manifest `content_scripts` list **and** the `chrome.scripting` injection fallback in `background.js` — both now inject `['i18n.js', 'content.js']`).
+- **`language`** added to `chrome.storage.sync` (default `'en'`), with `getLanguage`/`saveLanguage` in `storage.js` mirroring the difficulty helpers, and added to the `getSettings` defaults.
+- **`SHOW_POPUP` now carries `language`** — the background reads the saved language and forwards it alongside `difficulty`, so the overlay renders synchronously in the right language with no storage round-trip / English flash. `content.js` reads `message.language` (defaults `'en'`).
+- **Popup** — static strings tagged with `data-i18n` / `data-i18n-placeholder`; `applyTranslations(lang)` swaps them (touches option *text*, not *value*, so the selected difficulty/language survives a relabel). JS-driven strings (errors, session note, empty-list row, remove-button title, the localized duration units `m`/`s` → `分`/`秒`) route through `t()`/`tFormat()` using a module-level `currentLang`. Language is applied **before** the first render to avoid a flash.
+- **Overlay (`content.js`)** — the `{host}` templates are filled via a new `fillTemplate` helper that splits on `{host}` and `\n`, inserting the hostname through a `<strong class="time-nudge-host">` set with `textContent` (kept the no-innerHTML-for-host XSS guarantee).
+- The math itself (`847 ÷ 7`, `d/dx(x³)`) is language-neutral, so the translation surface is only UI chrome — ~30 short strings. Japanese copy is idiomatic-but-conventional; flagged for a native-speaker pass before any Store listing.
+
 ---
 
 ## How the shape evolved

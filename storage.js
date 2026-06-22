@@ -5,7 +5,7 @@ function normalizeHostname(hostname) {
 }
 
 async function getSettings() {
-    const result = await chrome.storage.sync.get({ trackedSites: [], thresholds: {}, difficultyLevel: 'hard', defaultThreshold: null });
+    const result = await chrome.storage.sync.get({ trackedSites: [], thresholds: {}, difficultyLevel: 'hard', defaultThreshold: null, language: 'en' });
     result.trackedSites = [...new Set(result.trackedSites.map(normalizeHostname))];
     return result;
 }
@@ -40,6 +40,15 @@ async function getDifficulty() {
 
 async function saveDifficulty(level) {
     await chrome.storage.sync.set({ difficultyLevel: level });
+}
+
+async function getLanguage() {
+    const { language } = await getSettings();
+    return language;
+}
+
+async function saveLanguage(lang) {
+    await chrome.storage.sync.set({ language: lang });
 }
 
 async function addSite(hostname) {

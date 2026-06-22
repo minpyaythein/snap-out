@@ -6,6 +6,19 @@ You pick the sites. When you've been on one too long, a popup blocks the screen.
 
 ---
 
+## Features
+
+- **Per-site soft limits** — track up to 6 sites, each with your own time threshold (default 5 min, up to 30)
+- **Escalating math difficulty** — 7 tiers from single-digit arithmetic all the way to logarithms, derivatives, integrals, and factorials
+- **Alert-only mode** — set difficulty to *None* for a plain dismissible banner when you want a gentle nudge, not a puzzle
+- **Multi-tab aware** — one timer per site across all its tabs; the nudge fires on every tab, and clearing it on one clears it everywhere
+- **Reload-proof** — opening a new tab or refreshing the page won't sneak you past the nudge
+- **Bilingual** — full English / 日本語 interface with an instant in-app language toggle
+- **Live timer** — the popup shows your accumulated time on the current site in real time
+- **Privacy-first** — everything lives in Chrome's local/synced storage; no servers, no accounts, no analytics
+
+---
+
 ## Why
 
 Ever looked up and realized you've been scrolling for an hour without meaning to? snap-out is a pattern interrupt. It doesn't block sites or set strict limits — it just makes you *consciously* choose to stay.
@@ -21,6 +34,8 @@ Ever looked up and realized you've been scrolling for an hour without meaning to
 5. Timer resets after dismissal
 
 Prefer a gentler nudge? Set the difficulty to **None** and you'll get a plain dismissible banner instead of a math challenge — no solving required.
+
+**Available in English and 日本語.** Pick your language from the popup — it switches the whole UI and the challenge overlay instantly. (The math itself is language-neutral, so only the wording changes.)
 
 **Works across tabs.** Time on a site is counted across every tab of that site (two YouTube tabs share one timer). When the alert fires it appears on *all* of them, and solving it on any one tab clears it everywhere. Opening a new tab — or reloading the page — won't sneak you past it.
 
@@ -60,8 +75,9 @@ Super Hard and Impossible include logarithms, derivatives, integrals, and factor
 2. Add a hostname (e.g. `www.youtube.com`)
 3. Set the alert duration (minutes + seconds) and click **Apply**
 4. Pick your difficulty level from the dropdown (or **None** for an alert-only banner)
-5. Browse normally — snap-out watches in the background, and the popup shows your live time on the current site
-6. When the timer hits, solve the problem to dismiss
+5. Choose your language (English / 日本語) — the UI and overlay update right away
+6. Browse normally — snap-out watches in the background, and the popup shows your live time on the current site
+7. When the timer hits, solve the problem to dismiss
 
 ---
 
@@ -72,7 +88,8 @@ background.js     Service worker — tracks time, triggers popup
 content.js        Injects the math challenge overlay
 content.css       Overlay styles
 storage.js        chrome.storage.sync helpers
-popup/            Extension popup UI (site list, alert duration, difficulty selector, live timer)
+i18n.js           Shared EN/JA dictionary + lookup (popup + content script)
+popup/            Extension popup UI (site list, alert duration, difficulty selector, language, live timer)
 ```
 
 ---

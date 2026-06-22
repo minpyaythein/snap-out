@@ -11,6 +11,33 @@ function safeSendMessage(message) {
     }
 }
 
+// Append text to `el`, turning each "\n" into a <br> — keeps the message a
+// single paragraph the way the original markup did.
+function appendWithBreaks(el, text) {
+    const lines = text.split('\n');
+    lines.forEach((line, i) => {
+        if (i > 0) el.appendChild(document.createElement('br'));
+        if (line) el.appendChild(document.createTextNode(line));
+    });
+}
+
+// Fill `el` from a translated template that may contain "{host}" and "\n".
+// The hostname goes in via textContent inside a styled <strong>, so it's never
+// interpolated as HTML regardless of what the page's URL contains.
+function fillTemplate(el, template, host) {
+    el.textContent = '';
+    const segments = template.split('{host}');
+    segments.forEach((seg, i) => {
+        appendWithBreaks(el, seg);
+        if (i < segments.length - 1) {
+            const strong = document.createElement('strong');
+            strong.className = 'time-nudge-host';
+            strong.textContent = host;
+            el.appendChild(strong);
+        }
+    });
+}
+
 const DIFFICULTY_CONFIG = {
     'easy':       { type: 'arithmetic',     ops: ['+', '-', '×', '÷'], range: { min: 1,   max: 10  }, operands: 2 },
     'medium':     { type: 'arithmetic',     ops: ['+', '-', '×', '÷'], range: { min: 10,  max: 99  }, operands: 2 },
@@ -171,28 +198,30 @@ function generateProblem(difficulty = 'hard') {
     return generateArithmetic(config);
 }
 
-function showBanner(hostname) {
+function showBanner(hostname, lang = 'en') {
     document.getElementById(OVERLAY_ID)?.remove();
 
     const banner = document.createElement('div');
     banner.id = OVERLAY_ID;
     banner.className = 'time-nudge-banner';
-    banner.innerHTML = `
-        <span>⏰ You've been on <strong class="time-nudge-host"></strong> for a while. Time for a break?</span>
-        <button class="time-nudge-banner-dismiss">Dismiss</button>
-    `;
-    // Set the hostname via textContent rather than interpolating into innerHTML.
-    banner.querySelector('.time-nudge-host').textContent = hostname;
 
-    banner.querySelector('.time-nudge-banner-dismiss').addEventListener('click', () => {
+    const text = document.createElement('span');
+    fillTemplate(text, t('bannerText', lang), hostname);
+
+    const dismiss = document.createElement('button');
+    dismiss.className = 'time-nudge-banner-dismiss';
+    dismiss.textContent = t('bannerDismiss', lang);
+    dismiss.addEventListener('click', () => {
         banner.remove();
         safeSendMessage({ type: 'DISMISS_POPUP', hostname });
     });
 
+    banner.appendChild(text);
+    banner.appendChild(dismiss);
     document.body.appendChild(banner);
 }
 
-function showPopup(hostname, difficulty = 'hard') {
+function showPopup(hostname, difficulty = 'hard', lang = 'en') {
     document.getElementById(OVERLAY_ID)?.remove();
 
     const overlay = document.createElement('div');
@@ -203,14 +232,11 @@ function showPopup(hostname, difficulty = 'hard') {
 
     overlay.innerHTML = `
         <div class="time-nudge-box">
-            <p class="time-nudge-message">
-                You've been on <strong class="time-nudge-host"></strong> for a while.<br>
-                Solve this to take a break!
-            </p>
+            <p class="time-nudge-message"></p>
             <p class="time-nudge-problem"></p>
-            <input class="time-nudge-input" type="number" placeholder="Your answer" />
+            <input class="time-nudge-input" type="number" />
             <p class="time-nudge-error"></p>
-            <button class="time-nudge-check" disabled>Check</button>
+            <button class="time-nudge-check" disabled></button>
         </div>
     `;
 
@@ -218,9 +244,12 @@ function showPopup(hostname, difficulty = 'hard') {
     const errorEl = overlay.querySelector('.time-nudge-error');
     const problemEl = overlay.querySelector('.time-nudge-problem');
     const checkBtn = overlay.querySelector('.time-nudge-check');
+    const messageEl = overlay.querySelector('.time-nudge-message');
 
-    // Set dynamic text via textContent rather than interpolating into innerHTML.
-    overlay.querySelector('.time-nudge-host').textContent = hostname;
+    // Set dynamic text via DOM/textContent rather than interpolating into innerHTML.
+    fillTemplate(messageEl, t('overlayMessage', lang), hostname);
+    input.placeholder = t('inputPlaceholder', lang);
+    checkBtn.textContent = t('checkButton', lang);
     problemEl.textContent = problem.question;
 
     // The Check button is only clickable once something is typed.
@@ -233,10 +262,12 @@ function showPopup(hostname, difficulty = 'hard') {
         box.innerHTML = `
             <div class="time-nudge-success">
                 <div class="time-nudge-checkmark">✓</div>
-                <p class="time-nudge-success-title">Nice work!</p>
-                <p class="time-nudge-success-sub">Back to it — make these minutes count. 🌿</p>
+                <p class="time-nudge-success-title"></p>
+                <p class="time-nudge-success-sub"></p>
             </div>
         `;
+        box.querySelector('.time-nudge-success-title').textContent = t('successTitle', lang);
+        box.querySelector('.time-nudge-success-sub').textContent = t('successSub', lang);
     }
 
     function validate() {
@@ -250,7 +281,7 @@ function showPopup(hostname, difficulty = 'hard') {
                 safeSendMessage({ type: 'DISMISS_POPUP', hostname });
             }, 1500);
         } else {
-            errorEl.textContent = 'Wrong! Try again.';
+            errorEl.textContent = t('wrongAnswer', lang);
             input.value = '';
             updateCheckState(); // re-disable now that the field is empty again
             // Restart the shake animation each wrong answer (toggle + reflow).
@@ -288,10 +319,11 @@ if (!window.__snapOutListener) {
                 sendResponse({ ok: true });
                 return;
             }
+            const lang = message.language || 'en';
             if (message.difficulty === 'none') {
-                showBanner(message.hostname);
+                showBanner(message.hostname, lang);
             } else {
-                showPopup(message.hostname, message.difficulty);
+                showPopup(message.hostname, message.difficulty, lang);
             }
         } else if (message.type === 'HIDE_OVERLAY') {
             document.getElementById(OVERLAY_ID)?.remove();
