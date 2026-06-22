@@ -164,7 +164,17 @@ Added `MAX_SITES = 6` in `popup.js`. The add handler rejects a new site once 6 a
 
 ## Phase 15 — Success message after solving (2026-06-22)
 
-A correct answer used to remove the overlay instantly. Now `content.js` swaps the card to a success state — an animated gradient checkmark, "Nice work!", and "Back to it — make these minutes count. 🌿" (reusing the existing pop-in/fade-in keyframes) — holds it ~2s, then removes the overlay and sends `DISMISS_POPUP` (which resets the timer and clears overlays on the other tabs). Applies to the math popup only; the `none`-mode banner still dismisses immediately.
+A correct answer used to remove the overlay instantly. Now `content.js` swaps the card to a success state — an animated gradient checkmark, "Nice work!", and "Back to it — make these minutes count. 🌿" (reusing the existing pop-in/fade-in keyframes) — holds it ~1.5s, then removes the overlay and sends `DISMISS_POPUP` (which resets the timer and clears overlays on the other tabs). Applies to the math popup only; the `none`-mode banner still dismisses immediately.
+
+## Phase 16 — Graceful injection fallback (2026-06-22)
+
+The content-script injection fallback in `sendPopupMessage` logged a scary `console.error` ("Cannot access contents of the page…") when it tried to inject into a non-scriptable page — `chrome://`, the Web Store, the new-tab page, or an **error page** (a tracked tab showing "site can't be reached" still reports its normal URL). Surfaced when switching between two timed-up tabs (catch-up injection). Now `sendPopupMessage` takes the whole `tab` object, skips injection entirely for non-`http(s)` URLs (`canInjectInto`), and downgrades the residual failures (error pages / Web Store, which look like https) to a soft `console.warn`. Purely cosmetic/log hygiene — the fallback was already caught and nothing broke.
+
+## Phase 17 — Survive "Extension context invalidated" (2026-06-22)
+
+When the extension reloads/updates while a page stays open, its already-injected content script is orphaned — `chrome.runtime` is dead and any call throws "Extension context invalidated." This surfaced as an uncaught error from the success-path `setTimeout` calling `chrome.runtime.sendMessage` (DISMISS_POPUP) 2s after a solve. Added a `safeSendMessage()` wrapper in `content.js` (try/catch) and routed both DISMISS_POPUP sends (success path + `none`-banner dismiss) through it. Can happen in production on auto-update, not just dev reloads.
+
+Note: the `window.__snapOutListener` once-guard still means an orphaned tab won't get a *working* overlay from the new background until the page is reloaded (the stale guard blocks the freshly-injected script from re-registering) — consistent with the documented "reload the page after reloading the extension" caveat.
 
 ---
 

@@ -205,17 +205,31 @@ async function hideOverlaysForHostname(hostname) {
 
 // ─── Send popup message with content script injection fallback ───────────────
 
+// Only http/https pages can host a content script. chrome:// pages, the Web
+// Store, the new-tab page, file:// etc. are off-limits — injecting there throws
+// "Cannot access contents of the page", so don't even try.
+function canInjectInto(url) {
+    return typeof url === 'string' && /^https?:\/\//.test(url);
+}
+
 // force=true rebuilds the overlay (fresh problem) — used when a nudge first
 // fires. force=false only shows it if the tab doesn't already have one — used
 // to catch up tabs that opened/navigated in after the initial broadcast, so a
 // half-typed answer is never wiped.
-async function sendPopupMessage(tabId, hostname, force = true) {
+async function sendPopupMessage(tab, hostname, force = true) {
+    const tabId = tab.id;
     const difficulty = await getDifficulty();
     const payload = { type: 'SHOW_POPUP', hostname, difficulty, force };
     console.log(`[TimeNudge] sendPopupMessage: sending SHOW_POPUP to tab ${tabId} for ${hostname} (difficulty: ${difficulty}, force: ${force})`);
     chrome.tabs.sendMessage(tabId, payload, () => {
         if (!chrome.runtime.lastError) {
             console.log('[TimeNudge] sendPopupMessage: message delivered successfully');
+            return;
+        }
+
+        // No content script in the tab — inject it, but only where allowed.
+        if (!canInjectInto(tab.url)) {
+            console.log(`[TimeNudge] sendPopupMessage: page not scriptable, skipping (${tab.url || 'unknown'})`);
             return;
         }
 
@@ -227,7 +241,7 @@ async function sendPopupMessage(tabId, hostname, force = true) {
                 setTimeout(() => {
                     chrome.tabs.sendMessage(tabId, payload, () => {
                         if (chrome.runtime.lastError) {
-                            console.error('[TimeNudge] sendPopupMessage: retry failed', chrome.runtime.lastError.message);
+                            console.warn('[TimeNudge] sendPopupMessage: retry failed', chrome.runtime.lastError.message);
                         } else {
                             console.log('[TimeNudge] sendPopupMessage: retry delivered successfully');
                         }
@@ -235,7 +249,9 @@ async function sendPopupMessage(tabId, hostname, force = true) {
                 }, 100);
             })
             .catch((err) => {
-                console.error('[TimeNudge] sendPopupMessage: failed to inject content script', err);
+                // Some http(s) pages still can't be scripted — error pages, the
+                // Web Store, etc. Expected and not actionable, so log softly.
+                console.warn('[TimeNudge] sendPopupMessage: page not scriptable, skipping', err.message);
             });
     });
 }
@@ -270,7 +286,7 @@ async function checkThreshold(source) {
         console.log(`[TimeNudge] checkThreshold (${source}): threshold reached for ${hostname}, showing popup on ${tabs.length} tab(s)`);
         if (tabs.length > 0) {
             for (const tab of tabs) {
-                await sendPopupMessage(tab.id, hostname, true);
+                await sendPopupMessage(tab, hostname, true);
             }
             const popupShown = { ...flushed.popupShown, [hostname]: true };
             await setSessionState({ popupShown });
@@ -284,7 +300,7 @@ async function checkThreshold(source) {
         // leaves an overlay that's already up untouched.
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (tab && tab.id != null) {
-            await sendPopupMessage(tab.id, hostname, false);
+            await sendPopupMessage(tab, hostname, false);
         }
     } else {
         const remaining = threshold - elapsed;

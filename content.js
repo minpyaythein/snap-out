@@ -1,5 +1,16 @@
 var OVERLAY_ID = 'time-nudge-overlay';
 
+// chrome.runtime calls throw "Extension context invalidated" when this content
+// script is orphaned by an extension reload/update while the page stays open.
+// Swallow it — there's nothing to do until the page reloads with a fresh script.
+function safeSendMessage(message) {
+    try {
+        chrome.runtime.sendMessage(message);
+    } catch (e) {
+        // orphaned content script; ignore
+    }
+}
+
 const DIFFICULTY_CONFIG = {
     'easy':       { type: 'arithmetic',     ops: ['+', '-', '×', '÷'], range: { min: 1,   max: 10  }, operands: 2 },
     'medium':     { type: 'arithmetic',     ops: ['+', '-', '×', '÷'], range: { min: 10,  max: 99  }, operands: 2 },
@@ -175,7 +186,7 @@ function showBanner(hostname) {
 
     banner.querySelector('.time-nudge-banner-dismiss').addEventListener('click', () => {
         banner.remove();
-        chrome.runtime.sendMessage({ type: 'DISMISS_POPUP', hostname });
+        safeSendMessage({ type: 'DISMISS_POPUP', hostname });
     });
 
     document.body.appendChild(banner);
@@ -236,8 +247,8 @@ function showPopup(hostname, difficulty = 'hard') {
             showSuccess();
             setTimeout(() => {
                 overlay.remove();
-                chrome.runtime.sendMessage({ type: 'DISMISS_POPUP', hostname });
-            }, 2000);
+                safeSendMessage({ type: 'DISMISS_POPUP', hostname });
+            }, 1500);
         } else {
             errorEl.textContent = 'Wrong! Try again.';
             input.value = '';
