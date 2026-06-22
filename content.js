@@ -1,0 +1,219 @@
+if (typeof OVERLAY_ID === 'undefined') {
+    var OVERLAY_ID = 'time-nudge-overlay';
+}
+
+const DIFFICULTY_CONFIG = {
+    'easy':       { type: 'arithmetic',     ops: ['+', '-', '×', '÷'], range: { min: 1,   max: 10  }, operands: 2 },
+    'medium':     { type: 'arithmetic',     ops: ['+', '-', '×', '÷'], range: { min: 10,  max: 99  }, operands: 2 },
+    'hard':       { type: 'arithmetic',     ops: ['+', '-', '×', '÷'], range: { min: 100, max: 999 }, operands: 2 },
+    'very-hard':  { type: 'arithmetic',     ops: ['+', '-', '×', '÷'], range: { min: 100, max: 999 }, operands: 3 },
+    'super-hard': { type: 'complex' },
+    'impossible': { type: 'double-complex' }
+};
+
+function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function toSup(n) {
+    return String(n).split('').map(d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join('');
+}
+
+function toSub(n) {
+    return String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[d]).join('');
+}
+
+function generateComplexExpr() {
+    const types = ['log', 'derivative', 'integral', 'factorial'];
+    const type = types[Math.floor(Math.random() * types.length)];
+
+    if (type === 'log') {
+        const bases = [2, 3, 5, 10];
+        const base = bases[Math.floor(Math.random() * bases.length)];
+        const exp = randInt(2, 5);
+        return { expr: `log${toSub(base)}(${Math.pow(base, exp)})`, answer: exp };
+    }
+
+    if (type === 'derivative') {
+        // d/dx(xⁿ) at x=k → answer = n·k^(n-1)
+        const n = randInt(2, 4);
+        const k = randInt(2, 9);
+        return { expr: `d/dx(x${toSup(n)}) at x=${k}`, answer: n * Math.pow(k, n - 1) };
+    }
+
+    if (type === 'integral') {
+        // ∫₀ᵏ n·x^(n-1) dx = kⁿ
+        const n = randInt(2, 3);
+        const k = randInt(2, 8);
+        const integrand = n === 2 ? '2x' : `3x${toSup(2)}`;
+        return { expr: `∫${toSub(0)}${toSup(k)} ${integrand} dx`, answer: Math.pow(k, n) };
+    }
+
+    // factorial
+    const n = randInt(5, 7);
+    let answer = 1;
+    for (let i = 2; i <= n; i++) answer *= i;
+    return { expr: `${n}!`, answer };
+}
+
+function generateThreeOperand(range) {
+    const r = range;
+    const patternIdx = Math.floor(Math.random() * 6);
+
+    if (patternIdx === 0) {
+        const a = randInt(r.min, r.max), b = randInt(r.min, r.max), c = randInt(r.min, r.max);
+        return { question: `${a} + ${b} + ${c} = ?`, answer: a + b + c };
+    }
+    if (patternIdx === 1) {
+        const a = randInt(r.min, r.max), b = randInt(r.min, r.max);
+        const c = randInt(r.min, Math.min(a + b - 1, r.max));
+        return { question: `${a} + ${b} − ${c} = ?`, answer: a + b - c };
+    }
+    if (patternIdx === 2) {
+        // Use smaller multipliers so the problem stays solvable (barely)
+        const a = randInt(10, 50), b = randInt(10, 50), c = randInt(r.min, r.max);
+        return { question: `${a} × ${b} + ${c} = ?`, answer: a * b + c };
+    }
+    if (patternIdx === 3) {
+        const a = randInt(10, 50), b = randInt(10, 50);
+        const product = a * b;
+        const c = randInt(1, Math.min(product - 1, r.max));
+        return { question: `${a} × ${b} − ${c} = ?`, answer: product - c };
+    }
+    if (patternIdx === 4) {
+        const divisor = randInt(2, 20);
+        const quotient = randInt(r.min, r.max);
+        const c = randInt(r.min, r.max);
+        return { question: `(${divisor * quotient} ÷ ${divisor}) + ${c} = ?`, answer: quotient + c };
+    }
+    // (a ÷ b) − c
+    const divisor = randInt(2, 20);
+    const quotient = randInt(r.min, r.max);
+    const c = randInt(r.min, Math.max(quotient - 1, r.min));
+    return { question: `(${divisor * quotient} ÷ ${divisor}) − ${c} = ?`, answer: Math.max(quotient - c, 0) };
+}
+
+function generateArithmetic(config) {
+    const { ops, range, operands } = config;
+
+    if (operands === 3) {
+        return generateThreeOperand(range);
+    }
+
+    const op = ops[Math.floor(Math.random() * ops.length)];
+    let a, b, answer;
+
+    if (op === '+') {
+        a = randInt(range.min, range.max);
+        b = randInt(range.min, range.max);
+        answer = a + b;
+    } else if (op === '-') {
+        a = randInt(range.min, range.max);
+        b = randInt(range.min, range.max);
+        if (b > a) { const tmp = a; a = b; b = tmp; }
+        answer = a - b;
+    } else if (op === '×') {
+        a = randInt(range.min, range.max);
+        b = randInt(range.min, range.max);
+        answer = a * b;
+    } else { // ÷
+        b = randInt(2, Math.min(range.max, 20));
+        answer = randInt(range.min, range.max);
+        a = b * answer;
+    }
+
+    return { question: `${a} ${op} ${b} = ?`, answer };
+}
+
+function generateProblem(difficulty = 'hard') {
+    const config = DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG['hard'];
+
+    if (config.type === 'complex') {
+        const { expr, answer } = generateComplexExpr();
+        return { question: `${expr} = ?`, answer };
+    }
+
+    if (config.type === 'double-complex') {
+        const p1 = generateComplexExpr();
+        const p2 = generateComplexExpr();
+        const ops = ['+', '-', '×'];
+        const op = ops[Math.floor(Math.random() * ops.length)];
+        let answer, question;
+
+        if (op === '+') {
+            answer = p1.answer + p2.answer;
+            question = `[${p1.expr}] + [${p2.expr}] = ?`;
+        } else if (op === '-') {
+            if (p2.answer > p1.answer) {
+                answer = p2.answer - p1.answer;
+                question = `[${p2.expr}] − [${p1.expr}] = ?`;
+            } else {
+                answer = p1.answer - p2.answer;
+                question = `[${p1.expr}] − [${p2.expr}] = ?`;
+            }
+        } else {
+            answer = p1.answer * p2.answer;
+            question = `[${p1.expr}] × [${p2.expr}] = ?`;
+        }
+
+        return { question, answer };
+    }
+
+    return generateArithmetic(config);
+}
+
+function showPopup(hostname, difficulty = 'hard') {
+    if (document.getElementById(OVERLAY_ID)) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = OVERLAY_ID;
+
+    let problem = generateProblem(difficulty);
+
+    overlay.innerHTML = `
+        <div class="time-nudge-box">
+            <p class="time-nudge-message">
+                You've been on <strong>${hostname}</strong> for a while.<br>
+                Solve this to take a break!
+            </p>
+            <p class="time-nudge-problem">${problem.question}</p>
+            <input class="time-nudge-input" type="number" placeholder="Your answer" />
+            <p class="time-nudge-error"></p>
+            <button class="time-nudge-check">Check</button>
+        </div>
+    `;
+
+    const input = overlay.querySelector('.time-nudge-input');
+    const errorEl = overlay.querySelector('.time-nudge-error');
+    const problemEl = overlay.querySelector('.time-nudge-problem');
+    const checkBtn = overlay.querySelector('.time-nudge-check');
+
+    function validate() {
+        const userAnswer = parseInt(input.value.trim(), 10);
+        if (userAnswer === problem.answer) {
+            overlay.remove();
+            chrome.runtime.sendMessage({ type: 'DISMISS_POPUP', hostname });
+        } else {
+            errorEl.textContent = 'Wrong! Try again.';
+            input.value = '';
+            setTimeout(() => {
+                problem = generateProblem(difficulty);
+                problemEl.textContent = problem.question;
+                errorEl.textContent = '';
+            }, 400);
+        }
+    }
+
+    checkBtn.addEventListener('click', validate);
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') validate();
+    });
+
+    document.body.appendChild(overlay);
+}
+
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === 'SHOW_POPUP') {
+        showPopup(message.hostname, message.difficulty);
+    }
+});

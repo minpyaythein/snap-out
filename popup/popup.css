@@ -1,0 +1,154 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f9f9fb;
+  color: #1a1a1a;
+  width: 300px;
+  min-height: 200px;
+}
+
+.container {
+  padding: 20px;
+}
+
+h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #6366f1;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #777;
+  margin-bottom: 16px;
+}
+
+#add-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+#site-input {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+#site-input:focus {
+  border-color: #6366f1;
+}
+
+#add-form button {
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#add-form button:hover {
+  background: #4f46e5;
+}
+
+.error {
+  font-size: 12px;
+  color: #e53e3e;
+  margin-bottom: 8px;
+}
+
+.hidden {
+  display: none;
+}
+
+#site-list {
+  list-style: none;
+  margin-top: 12px;
+}
+
+#site-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+#site-list li.empty {
+  justify-content: center;
+  color: #aaa;
+  font-size: 13px;
+  border: 1px dashed #ddd;
+  background: transparent;
+}
+
+.hostname {
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #bbb;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.remove-btn:hover {
+  color: #e53e3e;
+}
+
+.difficulty-section {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #ebebeb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.difficulty-section label {
+    font-size: 13px;
+    color: #555;
+    flex-shrink: 0;
+}
+
+#difficulty-select {
+    flex: 1;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 13px;
+    color: #1a1a1a;
+    background: #fff;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+#difficulty-select:focus {
+    border-color: #6366f1;
+}

@@ -1,0 +1,78 @@
+#time-nudge-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483647;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.time-nudge-box {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 32px 40px;
+    max-width: 360px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.time-nudge-message {
+    margin: 0 0 24px;
+    font-size: 16px;
+    line-height: 1.5;
+    color: #1a1a1a;
+}
+
+.time-nudge-message strong {
+    color: #6366f1;
+}
+
+.time-nudge-problem {
+    font-size: 22px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 16px;
+}
+
+.time-nudge-input {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 15px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    text-align: center;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+}
+
+.time-nudge-input:focus {
+    border-color: #6366f1;
+}
+
+.time-nudge-error {
+    min-height: 20px;
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: #dc2626;
+}
+
+.time-nudge-check {
+    margin-top: 12px;
+    background: #6366f1;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 28px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.time-nudge-check:hover {
+    background: #4f46e5;
+}

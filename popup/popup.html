@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snap Out</title>
+    <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+    <div class="container">
+        <h1>Snap Out</h1>
+        <p class="subtitle">Track sites you want to spend less time on.</p>
+
+        <form id="add-form">
+            <input
+                type="text"
+                id="site-input"
+                placeholder="e.g. www.twitter.com"
+                autocomplete="off"
+                spellcheck="false"
+            />
+            <button type="submit">Add</button>
+        </form>
+        <p id="error-msg" class="error hidden"></p>
+
+        <ul id="site-list"></ul>
+
+        <div class="difficulty-section">
+            <label for="difficulty-select">Math difficulty</label>
+            <select id="difficulty-select">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+                <option value="very-hard">Very Hard</option>
+                <option value="super-hard">Super Hard</option>
+                <option value="impossible">Impossible</option>
+            </select>
+        </div>
+    </div>
+    <script src="../storage.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>
