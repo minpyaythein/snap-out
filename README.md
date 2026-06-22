@@ -15,9 +15,12 @@ Ever looked up and realized you've been scrolling for an hour without meaning to
 ## How it works
 
 1. Add sites you want to watch (e.g. `www.youtube.com`, `www.reddit.com`)
-2. After the time threshold is reached, a math challenge overlay appears
-3. Solve it correctly to dismiss — wrong answer generates a new problem
-4. Timer resets after dismissal
+2. Set how long you can stay before the alert fires (default 5 min, up to 30)
+3. After the time threshold is reached, a math challenge overlay appears
+4. Solve it correctly to dismiss — wrong answer generates a new problem
+5. Timer resets after dismissal
+
+Prefer a gentler nudge? Set the difficulty to **None** and you'll get a plain dismissible banner instead of a math challenge — no solving required.
 
 ---
 
@@ -25,6 +28,7 @@ Ever looked up and realized you've been scrolling for an hour without meaning to
 
 | Level | Type | Example |
 |---|---|---|
+| None | No math — plain dismissible banner | _(just click Dismiss)_ |
 | Easy | 2 values, +−×÷, 1–10 | `8 ÷ 2 = ?` |
 | Medium | 2 values, +−×÷, 10–99 | `63 × 47 = ?` |
 | **Hard** *(default)* | 2 values, +−×÷, 100–999 | `847 ÷ 7 = ?` |
@@ -52,9 +56,10 @@ Super Hard and Impossible include logarithms, derivatives, integrals, and factor
 
 1. Click the snap-out icon in your toolbar
 2. Add a hostname (e.g. `www.youtube.com`)
-3. Pick your difficulty level from the dropdown
-4. Browse normally — snap-out watches in the background
-5. When the timer hits, solve the problem to dismiss
+3. Set the alert duration (minutes + seconds) and click **Apply**
+4. Pick your difficulty level from the dropdown (or **None** for an alert-only banner)
+5. Browse normally — snap-out watches in the background, and the popup shows your live time on the current site
+6. When the timer hits, solve the problem to dismiss
 
 ---
 
@@ -65,7 +70,7 @@ background.js     Service worker — tracks time, triggers popup
 content.js        Injects the math challenge overlay
 content.css       Overlay styles
 storage.js        chrome.storage.sync helpers
-popup/            Extension popup UI (site list + difficulty selector)
+popup/            Extension popup UI (site list, alert duration, difficulty selector, live timer)
 ```
 
 ---
