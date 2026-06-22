@@ -14,10 +14,10 @@ Ever looked up and realized you've been scrolling for an hour without meaning to
 
 ## How it works
 
-1. Add sites you want to watch (e.g. `www.youtube.com`, `www.reddit.com`)
+1. Add up to **6** sites you want to watch (e.g. `www.youtube.com`, `www.reddit.com`)
 2. Set how long you can stay before the alert fires (default 5 min, up to 30)
 3. After the time threshold is reached, a math challenge overlay appears
-4. Solve it correctly to dismiss — wrong answer generates a new problem
+4. Solve it correctly to dismiss — a quick *Nice work!* confirmation, then you're back. A wrong answer shakes and generates a new problem
 5. Timer resets after dismissal
 
 Prefer a gentler nudge? Set the difficulty to **None** and you'll get a plain dismissible banner instead of a math challenge — no solving required.
