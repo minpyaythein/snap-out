@@ -176,6 +176,10 @@ When the extension reloads/updates while a page stays open, its already-injected
 
 Note: the `window.__snapOutListener` once-guard still means an orphaned tab won't get a *working* overlay from the new background until the page is reloaded (the stale guard blocks the freshly-injected script from re-registering) — consistent with the documented "reload the page after reloading the extension" caveat.
 
+## Phase 18 — De-dupe the empty-state message (2026-06-22)
+
+With zero tracked sites the popup showed "No sites tracked yet" twice — once in the list's empty `<li>` and once in the session-timer placeholder. `updateSessionTimer` now hides the session timer entirely when `trackedSites.length === 0` (the list already conveys it). The placeholder is reserved for "you have sites, just not on one right now": `Not tracking this site` (untracked tab) / `No active timer` (non-web tab).
+
 ---
 
 ## How the shape evolved

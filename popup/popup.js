@@ -25,12 +25,19 @@ async function updateSessionTimer() {
 
     const { trackedSites } = await getSettings();
 
+    // Nothing tracked yet — the list already shows "No sites tracked yet", so
+    // keep the timer hidden instead of repeating the same message right below it.
+    if (trackedSites.length === 0) {
+        sessionTimer.classList.add('hidden');
+        return;
+    }
+
     if (!hostname) {
         showSessionMessage('No active timer');
         return;
     }
     if (!trackedSites.includes(hostname)) {
-        showSessionMessage(trackedSites.length ? 'Not tracking this site' : 'No sites tracked yet');
+        showSessionMessage('Not tracking this site');
         return;
     }
 
