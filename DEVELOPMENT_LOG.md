@@ -140,6 +140,24 @@ The add box used to accept anything after stripping protocol/path — typing `he
 
 Trade-off noted: IP addresses and `localhost` are intentionally rejected (not the target use case for a distraction tracker).
 
+## Phase 12 — Visual refresh: polished light + glass (2026-06-22)
+
+Cosmetic only, no behavior change. Both surfaces got a "fancier" pass with rounder corners:
+
+- **Overlay (`content.css`):** frosted-glass backdrop (`backdrop-filter: blur`), card with 24px radius + a gradient accent tab and layered shadow, fade + pop-in animations, gradient indigo→violet problem text and buttons. The math input now shakes with a red ring on a wrong answer (new `.time-nudge-wrong` class toggled from `content.js`). Banner gets a gradient + slide-down.
+- **Check button gating:** the Check button starts `disabled` and is only enabled while the input has a value (`updateCheckState` on `input`, re-disabled after a wrong answer clears the field); `validate()` also no-ops on empty input. Styled `:disabled` grey + `not-allowed`.
+- **Popup (`popup.css`):** gradient title text, 12–14px rounded inputs/cards/buttons, focus glow rings, gradient buttons with hover-lift, soft shadows on the site cards, a gradient-tinted session timer, and a subtle container fade-in. File normalized to 4-space indentation while rewriting.
+
+Palette unchanged at heart: `#6366f1 → #8b5cf6` indigo/violet.
+
+## Phase 13 — Add/remove no longer resets the active site's timer (2026-06-22)
+
+**Bug:** adding or removing *another* (non-active) site reset the timer of the site you were currently on — visibly to zero if it hadn't hit a 30s background flush yet.
+
+**Cause:** the popup's add/remove handlers wrote `chrome.storage.session` directly with `lastActiveTime: Date.now()`. `lastActiveTime` is a *single shared* value (the active site's flush boundary), so resetting it discarded the active site's un-flushed live time. If `elapsed[activeSite]` wasn't populated yet (first 30s), the displayed timer — which was coming entirely from `now − lastActiveTime` — dropped to 0. The direct writes also bypassed the background's `runExclusive` lock.
+
+**Fix:** new **`RESET_SITE`** message. The popup now calls `addSite`/`removeSite` then sends `RESET_SITE`; the background (under the lock) flushes the active site first, deletes only the target site's `elapsed`/`popupShown`, clears its schedule, hides its overlays, and **only** resets `lastActiveTime` when the target *is* the active site. The popup no longer writes runtime session state at all. The now-unused `HIDE_ALL_OVERLAYS` message was removed (`RESET_SITE` hides overlays itself).
+
 ---
 
 ## How the shape evolved

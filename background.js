@@ -313,11 +313,35 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 // ─── Handle DISMISS_POPUP from content script ────────────────────────────────
 
 chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === 'HIDE_ALL_OVERLAYS') {
-        // Fired by the popup when a site is removed or its duration retuned, so
-        // any visible overlay is cleared on every tab of that hostname, not just
-        // the active one. No state mutation, so no lock needed.
-        if (message.hostname) hideOverlaysForHostname(message.hostname);
+    if (message.type === 'RESET_SITE') {
+        // Fired by the popup when a site is added or removed. Resets just that
+        // site's counter, going through the background so it (a) flushes the
+        // active site first — otherwise resetting a DIFFERENT site would wipe the
+        // active site's un-flushed time — and (b) is serialized under the lock.
+        const host = message.hostname;
+        if (!host) return;
+        runExclusive(async () => {
+            console.log(`[TimeNudge] RESET_SITE received for ${host}`);
+            const state = await flushElapsed(await getSessionState());
+            const elapsed = { ...state.elapsed };
+            const popupShown = { ...state.popupShown };
+            delete elapsed[host];
+            delete popupShown[host];
+            const patch = { elapsed, popupShown };
+            // Only restart the shared clock when the reset site is the active one,
+            // so its freshly-zeroed counter doesn't get the old delta added back.
+            // For any other site, leaving lastActiveTime alone keeps the active
+            // site's timer running undisturbed.
+            if (state.activeHostname === host) {
+                patch.lastActiveTime = Date.now();
+            }
+            await setSessionState(patch);
+            clearTimeout(pendingTimeouts[host]);
+            delete pendingTimeouts[host];
+            chrome.alarms.clear(THRESHOLD_ALARM_PREFIX + host);
+            await hideOverlaysForHostname(host);
+            await checkThreshold('reset-site');
+        });
         return;
     }
     if (message.type === 'THRESHOLD_CHANGED') {

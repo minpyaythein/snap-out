@@ -80,17 +80,9 @@ function renderList(sites) {
         `;
         li.querySelector('.remove-btn').addEventListener('click', async () => {
             await removeSite(hostname);
-
-            // Clear elapsed and popupShown for the removed site
-            const session = await chrome.storage.session.get({ elapsed: {}, popupShown: {} });
-            const elapsed = { ...session.elapsed };
-            const popupShown = { ...session.popupShown };
-            delete elapsed[hostname];
-            delete popupShown[hostname];
-            await chrome.storage.session.set({ elapsed, popupShown, lastActiveTime: Date.now() });
-
-            // Hide the overlay on every tab of this site, not just the active one.
-            chrome.runtime.sendMessage({ type: 'HIDE_ALL_OVERLAYS', hostname });
+            // Background resets this site's counter and hides its overlays,
+            // without disturbing the timer of whatever site is currently active.
+            chrome.runtime.sendMessage({ type: 'RESET_SITE', hostname });
 
             const { trackedSites } = await getSettings();
             renderList(trackedSites);
@@ -142,13 +134,9 @@ addForm.addEventListener('submit', async (e) => {
     await addSite(hostname);
     siteInput.value = '';
 
-    // Reset elapsed counter so tracking starts fresh from now
-    const session = await chrome.storage.session.get({ elapsed: {}, popupShown: {} });
-    const elapsed = { ...session.elapsed };
-    const popupShown = { ...session.popupShown };
-    delete elapsed[hostname];
-    delete popupShown[hostname];
-    await chrome.storage.session.set({ elapsed, popupShown, lastActiveTime: Date.now() });
+    // Start this site's counter fresh, via the background so the currently-active
+    // site's timer isn't disturbed.
+    chrome.runtime.sendMessage({ type: 'RESET_SITE', hostname });
 
     const updated = await getSettings();
     renderList(updated.trackedSites);

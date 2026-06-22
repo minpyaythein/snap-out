@@ -199,7 +199,7 @@ function showPopup(hostname, difficulty = 'hard') {
             <p class="time-nudge-problem"></p>
             <input class="time-nudge-input" type="number" placeholder="Your answer" />
             <p class="time-nudge-error"></p>
-            <button class="time-nudge-check">Check</button>
+            <button class="time-nudge-check" disabled>Check</button>
         </div>
     `;
 
@@ -212,7 +212,13 @@ function showPopup(hostname, difficulty = 'hard') {
     overlay.querySelector('.time-nudge-host').textContent = hostname;
     problemEl.textContent = problem.question;
 
+    // The Check button is only clickable once something is typed.
+    function updateCheckState() {
+        checkBtn.disabled = input.value.trim() === '';
+    }
+
     function validate() {
+        if (input.value.trim() === '') return; // nothing entered
         const userAnswer = parseInt(input.value.trim(), 10);
         if (userAnswer === problem.answer) {
             overlay.remove();
@@ -220,20 +226,28 @@ function showPopup(hostname, difficulty = 'hard') {
         } else {
             errorEl.textContent = 'Wrong! Try again.';
             input.value = '';
+            updateCheckState(); // re-disable now that the field is empty again
+            // Restart the shake animation each wrong answer (toggle + reflow).
+            input.classList.remove('time-nudge-wrong');
+            void input.offsetWidth;
+            input.classList.add('time-nudge-wrong');
             setTimeout(() => {
                 problem = generateProblem(difficulty);
                 problemEl.textContent = problem.question;
                 errorEl.textContent = '';
+                input.classList.remove('time-nudge-wrong');
             }, 400);
         }
     }
 
+    input.addEventListener('input', updateCheckState);
     checkBtn.addEventListener('click', validate);
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') validate();
     });
 
     document.body.appendChild(overlay);
+    updateCheckState();
     input.focus();
 }
 

@@ -4,15 +4,22 @@
     left: 0;
     right: 0;
     z-index: 2147483647;
-    background: #6366f1;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 20px;
+    padding: 14px 22px;
+    border-radius: 0 0 18px 18px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size: 14px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.35);
+    animation: time-nudge-slide-down 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes time-nudge-slide-down {
+    from { transform: translateY(-100%); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
 }
 
 .time-nudge-banner strong {
@@ -20,97 +27,162 @@
 }
 
 .time-nudge-banner-dismiss {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.22);
     color: #fff;
     border: none;
-    border-radius: 6px;
-    padding: 5px 14px;
+    border-radius: 10px;
+    padding: 7px 16px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     flex-shrink: 0;
-    transition: background 0.15s;
+    transition: background 0.15s, transform 0.12s;
 }
 
 .time-nudge-banner-dismiss:hover {
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.38);
+    transform: translateY(-1px);
 }
 
 #time-nudge-overlay.time-nudge-popup {
     position: fixed;
     inset: 0;
     z-index: 2147483647;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(20, 18, 35, 0.45);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
     justify-content: center;
+    animation: time-nudge-fade-in 0.25s ease both;
+}
+
+@keyframes time-nudge-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 .time-nudge-box {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 32px 40px;
-    max-width: 360px;
+    position: relative;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 24px;
+    padding: 38px 40px;
+    max-width: 380px;
     width: 90%;
     text-align: center;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 24px 60px rgba(40, 30, 90, 0.35);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    animation: time-nudge-pop-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes time-nudge-pop-in {
+    from { opacity: 0; transform: scale(0.9) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Gradient accent tab at the top of the card. */
+.time-nudge-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 56px;
+    height: 5px;
+    border-radius: 0 0 6px 6px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
 }
 
 .time-nudge-message {
-    margin: 0 0 24px;
+    margin: 6px 0 22px;
     font-size: 16px;
-    line-height: 1.5;
-    color: #1a1a1a;
+    line-height: 1.55;
+    color: #2a2a35;
 }
 
 .time-nudge-message strong {
     color: #6366f1;
+    font-weight: 700;
 }
 
 .time-nudge-problem {
-    font-size: 22px;
-    font-weight: 600;
-    color: #1a1a1a;
-    margin: 0 0 16px;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 18px;
+    background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .time-nudge-input {
     width: 100%;
-    padding: 9px 12px;
-    font-size: 15px;
-    border: 2px solid #d1d5db;
-    border-radius: 8px;
+    padding: 11px 14px;
+    font-size: 16px;
+    border: 2px solid #e3e0f0;
+    border-radius: 14px;
     text-align: center;
     outline: none;
     box-sizing: border-box;
-    transition: border-color 0.15s;
+    transition: border-color 0.18s, box-shadow 0.18s;
 }
 
 .time-nudge-input:focus {
     border-color: #6366f1;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.16);
+}
+
+/* Wrong-answer feedback: red ring + a quick shake (toggled from content.js). */
+.time-nudge-input.time-nudge-wrong {
+    border-color: #e5484d;
+    box-shadow: 0 0 0 4px rgba(229, 72, 77, 0.16);
+    animation: time-nudge-shake 0.4s ease;
+}
+
+@keyframes time-nudge-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-7px); }
+    40% { transform: translateX(7px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
 }
 
 .time-nudge-error {
     min-height: 20px;
     margin: 8px 0 0;
     font-size: 13px;
-    color: #dc2626;
+    font-weight: 500;
+    color: #e5484d;
 }
 
 .time-nudge-check {
-    margin-top: 12px;
-    background: #6366f1;
+    margin-top: 14px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
     color: #ffffff;
     border: none;
-    border-radius: 8px;
-    padding: 10px 28px;
+    border-radius: 14px;
+    padding: 12px 32px;
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s;
+    box-shadow: 0 6px 18px rgba(99, 102, 241, 0.4);
+    transition: transform 0.12s, box-shadow 0.18s, filter 0.18s;
 }
 
-.time-nudge-check:hover {
-    background: #4f46e5;
+.time-nudge-check:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px rgba(99, 102, 241, 0.5);
+    filter: brightness(1.05);
+}
+
+.time-nudge-check:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.time-nudge-check:disabled {
+    background: #c7c5d6;
+    box-shadow: none;
+    cursor: not-allowed;
 }

@@ -1,147 +1,186 @@
 * {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #f9f9fb;
-  color: #1a1a1a;
-  width: 300px;
-  min-height: 200px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(160deg, #faf9ff 0%, #f1eefb 100%);
+    color: #1a1a1a;
+    width: 320px;
+    min-height: 200px;
 }
 
 .container {
-  padding: 20px;
+    padding: 22px;
+    animation: container-in 0.25s ease both;
+}
+
+@keyframes container-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 h1 {
-  font-size: 18px;
-  font-weight: 700;
-  color: #6366f1;
-  margin-bottom: 4px;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .subtitle {
-  font-size: 12px;
-  color: #777;
-  margin-bottom: 16px;
+    font-size: 12px;
+    color: #8a8a99;
+    margin-bottom: 18px;
 }
 
 #add-form {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 6px;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 6px;
 }
 
 #site-input {
-  flex: 1;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 7px 10px;
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.15s;
+    flex: 1;
+    border: 1.5px solid #e3e0f0;
+    border-radius: 12px;
+    padding: 9px 12px;
+    font-size: 13px;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.18s, box-shadow 0.18s;
 }
 
 #site-input:focus {
-  border-color: #6366f1;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 #add-form button {
-  background: #6366f1;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    transition: transform 0.12s, box-shadow 0.18s, filter 0.18s;
 }
 
 #add-form button:hover {
-  background: #4f46e5;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+    filter: brightness(1.05);
+}
+
+#add-form button:active {
+    transform: translateY(0);
 }
 
 .error {
-  font-size: 12px;
-  color: #e53e3e;
-  margin-bottom: 8px;
+    font-size: 12px;
+    color: #e5484d;
+    margin-bottom: 8px;
+    padding-left: 2px;
 }
 
 .hidden {
-  /* !important so it wins against later same-specificity rules like
-     `.session-timer { display: flex }`, which otherwise override it. */
-  display: none !important;
+    /* !important so it wins against later same-specificity rules like
+       `.session-timer { display: flex }`, which otherwise override it. */
+    display: none !important;
 }
 
 #site-list {
-  list-style: none;
-  margin-top: 12px;
+    list-style: none;
+    margin-top: 12px;
 }
 
 #site-list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-  background: #fff;
-  border: 1px solid #ebebeb;
-  border-radius: 6px;
-  margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #efedf7;
+    border-radius: 12px;
+    margin-bottom: 7px;
+    box-shadow: 0 1px 3px rgba(80, 70, 160, 0.06);
+    transition: transform 0.12s, box-shadow 0.18s;
+}
+
+#site-list li:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(80, 70, 160, 0.12);
 }
 
 #site-list li.empty {
-  justify-content: center;
-  color: #aaa;
-  font-size: 13px;
-  border: 1px dashed #ddd;
-  background: transparent;
+    justify-content: center;
+    color: #aaa;
+    font-size: 13px;
+    border: 1px dashed #d8d4ec;
+    background: transparent;
+    box-shadow: none;
+}
+
+#site-list li.empty:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .hostname {
-  font-size: 13px;
-  word-break: break-all;
+    font-size: 13px;
+    font-weight: 500;
+    word-break: break-all;
 }
 
 .remove-btn {
-  background: none;
-  border: none;
-  color: #bbb;
-  cursor: pointer;
-  font-size: 13px;
-  padding: 2px 4px;
-  border-radius: 4px;
-  transition: color 0.15s;
-  flex-shrink: 0;
+    background: none;
+    border: none;
+    color: #c2bfd4;
+    cursor: pointer;
+    font-size: 13px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
 }
 
 .remove-btn:hover {
-  color: #e53e3e;
+    color: #e5484d;
+    background: #fdecec;
 }
 
 .session-timer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 10px;
-    margin-top: 10px;
-    background: #f0f0ff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
+    padding: 10px 12px;
+    margin-top: 12px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.10), rgba(139, 92, 246, 0.10));
+    border: 1px solid rgba(99, 102, 241, 0.18);
+    border-radius: 12px;
     font-size: 12px;
 }
 
 .session-timer #session-hostname {
     color: #555;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .session-timer #session-elapsed {
     color: #6366f1;
-    font-weight: 600;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
 
@@ -149,21 +188,22 @@ h1 {
    instead of a live countdown. */
 .session-timer.placeholder {
     justify-content: center;
-    background: #f5f5f7;
+    background: #f5f4f9;
+    border-color: #e8e6f0;
 }
 
 .session-timer.placeholder #session-hostname {
-    color: #999;
+    color: #9a98a8;
     font-weight: 400;
 }
 
 .duration-section {
-    margin-top: 16px;
-    padding-top: 14px;
-    border-top: 1px solid #ebebeb;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid #ece9f6;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
 }
 
 .duration-header {
@@ -181,7 +221,7 @@ h1 {
 #duration-current {
     font-size: 12px;
     color: #6366f1;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .duration-inputs {
@@ -196,20 +236,21 @@ h1 {
 }
 
 .duration-field input {
-    width: 52px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 6px 8px;
+    width: 54px;
+    border: 1.5px solid #e3e0f0;
+    border-radius: 10px;
+    padding: 7px 8px;
     font-size: 13px;
     color: #1a1a1a;
     background: #fff;
     outline: none;
     text-align: center;
-    transition: border-color 0.15s;
+    transition: border-color 0.18s, box-shadow 0.18s;
 }
 
 .duration-field input:focus {
     border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 .duration-field span {
@@ -218,24 +259,27 @@ h1 {
 }
 
 #duration-apply {
-    background: #6366f1;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
     color: #fff;
     border: none;
-    border-radius: 6px;
-    padding: 7px 10px;
+    border-radius: 12px;
+    padding: 9px 10px;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s, transform 0.1s;
     width: 100%;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    transition: transform 0.12s, box-shadow 0.18s, filter 0.18s;
 }
 
 #duration-apply:hover {
-    background: #4f46e5;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+    filter: brightness(1.05);
 }
 
 #duration-apply:active {
-    transform: scale(0.96);
+    transform: scale(0.97);
 }
 
 @keyframes apply-success {
@@ -250,9 +294,9 @@ h1 {
 }
 
 .difficulty-section {
-    margin-top: 16px;
-    padding-top: 14px;
-    border-top: 1px solid #ebebeb;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid #ece9f6;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -267,17 +311,18 @@ h1 {
 
 #difficulty-select {
     flex: 1;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 6px 8px;
+    border: 1.5px solid #e3e0f0;
+    border-radius: 10px;
+    padding: 8px;
     font-size: 13px;
     color: #1a1a1a;
     background: #fff;
     outline: none;
     cursor: pointer;
-    transition: border-color 0.15s;
+    transition: border-color 0.18s, box-shadow 0.18s;
 }
 
 #difficulty-select:focus {
     border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
