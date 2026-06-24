@@ -13,6 +13,31 @@ You pick the sites. When you've been on one too long, a popup blocks the screen.
 
 ---
 
+## Why I built this
+
+I kept catching myself doomscrolling — looking up an hour later with nothing to show for it.
+I wanted something that would actually *interrupt* the habit, so I built it. I'd **never built a
+browser extension before**, so this was a from-scratch learning project. Building it taught me:
+
+- **Chrome Extension architecture (Manifest V3)** — how a service worker, content scripts, and
+  the popup are three separate worlds that only talk through message passing.
+- **A service worker as a timer engine** — tracking active-tab time with the `alarms` API and
+  `tabs`/`windows` events, and keeping state across service-worker restarts.
+- **Two kinds of storage** — `chrome.storage.sync` for persistent settings vs
+  `chrome.storage.session` for runtime state, and why mixing them up bites you.
+- **Injecting into live pages** — content scripts and the `chrome.scripting` fallback, plus the
+  pages you're *not* allowed to touch (`chrome://`, the Web Store, `file://`).
+- **Real concurrency** — serializing state writes with a lock because event handlers fire at the
+  same time and storage writes aren't atomic (my first proper race-condition bug).
+- **Multi-tab state sync** — one shared timer per site across all its tabs, and tearing the nudge
+  down everywhere when it's solved on any one.
+- **Rolling my own i18n** — `chrome.i18n` can't switch at runtime, so I built an EN/JA layer with
+  a live language toggle.
+- **Vanilla JS with some security hygiene** — no framework, no build step, and using `textContent`
+  (not `innerHTML`) for anything derived from user input.
+
+---
+
 ## Features
 
 - **Per-site soft limits** — track up to 6 sites, each with your own time threshold (default 5 min, up to 30)
